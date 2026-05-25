@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connexion — Nocturna</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="nav"></div>
+
+  <div class="container">
+    <div class="auth-wrap fade-up">
+      <div class="mono text-mute mb-2">Accès</div>
+      <h1 class="auth-title">Bonsoir<span class="text-blood">.</span></h1>
+      <p class="auth-sub">Connectez-vous pour réserver votre place.</p>
+
+      <div id="alertBox"></div>
+
+      <form id="loginForm" class="form">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="password">Mot de passe</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Se connecter</button>
+      </form>
+
+      <p class="auth-switch">
+        Pas encore de compte ? <a href="register.html">Créer un compte</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    renderNav('login');
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next') || 'index.html';
+
+    if (auth.isLoggedIn()) window.location.href = next;
+
+    const form = document.getElementById('loginForm');
+    const alertBox = document.getElementById('alertBox');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert(alertBox);
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span> Connexion…';
+
+      try {
+        const data = await apiFetch('/auth/login', {
+          method: 'POST',
+          body: {
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+          },
+        });
+        auth.setSession(data.access_token, data.user);
+        window.location.href = next;
+      } catch (err) {
+        showAlert(alertBox, err.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Se connecter';
+      }
+    });
+  </script>
+</body>
+</html>

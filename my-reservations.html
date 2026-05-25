@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mes places — Nocturna</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="nav"></div>
+
+  <section class="container" style="padding: 60px 0;">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow mono">Espace personnel</div>
+        <h2 class="section-title">Mes <em class="serif-italic text-blood">réservations</em></h2>
+      </div>
+    </div>
+
+    <div id="resList" class="empty">Chargement…</div>
+  </section>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    renderNav('me');
+    if (!requireAuth()) {} // redirige si non connecté
+
+    async function load() {
+      const container = document.getElementById('resList');
+      try {
+        const list = await apiFetch('/reservations/me');
+        if (!list.length) {
+          container.innerHTML = '<div class="empty">Vous n\'avez pas encore réservé.</div>';
+          return;
+        }
+        container.classList.remove('empty');
+        container.innerHTML = list.map(r => {
+          const statusColor = r.status === 'paid' ? 'var(--acid)' : (r.status === 'pending' ? 'var(--bone-mute)' : 'var(--blood)');
+          const statusLabel = r.status === 'paid' ? 'Confirmée' : (r.status === 'pending' ? 'En attente de paiement' : 'Annulée');
+          return `
+            <div style="border:1px solid var(--ink-line);background:var(--ink-soft);padding:24px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:240px;">
+                <div class="mono text-mute mb-1">${formatDate(r.event_date)}</div>
+                <h3 style="font-family:'Fraunces',serif;font-size:1.5rem;margin-bottom:6px;">${r.event_title}</h3>
+                <div class="text-mute">${r.formula_name} · ${r.quantity} place${r.quantity > 1 ? 's' : ''}</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="mono" style="color:${statusColor};margin-bottom:6px;">${statusLabel}</div>
+                <div style="font-family:'Fraunces',serif;font-size:1.4rem;color:var(--blood);">
+                  ${r.amount_paid_cents ? formatPrice(r.amount_paid_cents) : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = `<div class="empty">Erreur : ${err.message}</div>`;
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

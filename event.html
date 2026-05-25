@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Soirée — Nocturna</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="nav"></div>
+
+  <div class="container">
+    <div id="alertBox"></div>
+    <div id="eventContent" class="empty">Chargement…</div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    renderNav('home');
+    const params = new URLSearchParams(window.location.search);
+    const eventId = params.get('id');
+    const cancelled = params.get('cancelled');
+
+    if (cancelled) {
+      showAlert(document.getElementById('alertBox'), 'Paiement annulé. Aucune charge n\'a été effectuée.');
+    }
+
+    let selectedFormulaId = null;
+    let quantity = 1;
+    let currentEvent = null;
+
+    async function load() {
+      const container = document.getElementById('eventContent');
+      try {
+        const [event, formulas] = await Promise.all([
+          apiFetch(`/events/${eventId}`),
+          apiFetch('/formulas'),
+        ]);
+        currentEvent = event;
+        render(event, formulas);
+      } catch (err) {
+        container.innerHTML = `<div class="empty">Erreur : ${err.message}</div>`;
+      }
+    }
+
+    function render(ev, formulas) {
+      const full = ev.seats_left <= 0;
+      const container = document.getElementById('eventContent');
+      container.classList.remove('empty');
+      container.innerHTML = `
+        <section class="event-hero">
+          <div class="event-gallery fade-up">
+            ${ev.images.length
+              ? `<img class="event-main-img" id="mainImg" src="${ev.images[0].url}" alt="${ev.title}">
+                 ${ev.images.length > 1 ? `<div class="event-thumbs">
+                   ${ev.images.map((img, i) => `<img class="event-thumb ${i === 0 ? 'active' : ''}" data-idx="${i}" src="${img.url}" alt="">`).join('')}
+                 </div>` : ''}`
+              : `<div class="event-main-img placeholder" style="display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-style:italic;color:var(--bone-mute);font-size:2rem;">Nocturna</div>`
+            }
+          </div>
+
+          <div class="event-info fade-up delay-1">
+            <div class="mono text-mute mb-2">${ev.department} · ${ev.city}</div>
+            <h1>${ev.title}</h1>
+
+            <div class="event-meta-grid">
+              <div class="meta-item">
+                <div class="mono">Date</div>
+                <div class="val">${formatDate(ev.date)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="mono">Heure</div>
+                <div class="val">${formatTime(ev.date)}</div>
+              </div>
+              <div class="meta-item">
+                <div class="mono">Lieu</div>
+                <div class="val">${ev.city}</div>
+              </div>
+              <div class="meta-item">
+                <div class="mono">Places restantes</div>
+                <div class="val ${full ? 'text-blood' : ''}">${full ? 'Complet' : `${ev.seats_left} / ${ev.max_people}`}</div>
+              </div>
+            </div>
+
+            ${ev.description ? `<p class="event-desc">${ev.description}</p>` : ''}
+          </div>
+        </section>
+
+        <section class="section" style="border-top:1px solid var(--ink-line);padding-top:60px;">
+          <div class="section-head">
+            <div>
+              <div class="section-eyebrow mono">Choisissez</div>
+              <h2 class="section-title">Votre <em class="serif-italic text-blood">formule</em></h2>
+            </div>
+          </div>
+
+          <div class="formulas-list" id="formulasList">
+            ${formulas.map(f => `
+              <div class="formula" data-id="${f.id}">
+                <div class="formula-left">
+                  <div class="formula-name">${f.name}</div>
+                  <div class="formula-desc">${f.description || ''}</div>
+                </div>
+                <div class="formula-price">${formatPrice(f.price_cents)}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="qty-control">
+            <label>Nombre de places</label>
+            <button type="button" class="qty-btn" id="qtyMinus">−</button>
+            <span class="qty-val" id="qtyVal">1</span>
+            <button type="button" class="qty-btn" id="qtyPlus">+</button>
+          </div>
+
+          <div id="resAlert"></div>
+
+          <button type="button" id="reserveBtn" class="btn btn-blood btn-block" ${full ? 'disabled' : ''}>
+            ${full ? 'Soirée complète' : 'Réserver et payer'}
+          </button>
+
+          <p class="mono text-mute text-center mt-2" style="font-size:0.7rem;">
+            Paiement sécurisé par Stripe · CB acceptées
+          </p>
+        </section>
+      `;
+
+      // Sélecteur de formule
+      document.querySelectorAll('.formula').forEach(el => {
+        el.addEventListener('click', () => {
+          document.querySelectorAll('.formula').forEach(x => x.classList.remove('selected'));
+          el.classList.add('selected');
+          selectedFormulaId = parseInt(el.dataset.id);
+        });
+      });
+
+      // Galerie
+      document.querySelectorAll('.event-thumb').forEach(t => {
+        t.addEventListener('click', () => {
+          const idx = parseInt(t.dataset.idx);
+          document.getElementById('mainImg').src = ev.images[idx].url;
+          document.querySelectorAll('.event-thumb').forEach(x => x.classList.remove('active'));
+          t.classList.add('active');
+        });
+      });
+
+      // Quantité
+      const qtyVal = document.getElementById('qtyVal');
+      document.getElementById('qtyMinus').addEventListener('click', () => {
+        quantity = Math.max(1, quantity - 1);
+        qtyVal.textContent = quantity;
+      });
+      document.getElementById('qtyPlus').addEventListener('click', () => {
+        quantity = Math.min(20, ev.seats_left, quantity + 1);
+        qtyVal.textContent = quantity;
+      });
+
+      // Réservation
+      document.getElementById('reserveBtn').addEventListener('click', reserve);
+    }
+
+    async function reserve() {
+      const alertBox = document.getElementById('resAlert');
+      clearAlert(alertBox);
+
+      if (!auth.isLoggedIn()) {
+        window.location.href = `login.html?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        return;
+      }
+
+      if (!selectedFormulaId) {
+        showAlert(alertBox, 'Veuillez sélectionner une formule.');
+        return;
+      }
+
+      const btn = document.getElementById('reserveBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Redirection vers Stripe…';
+
+      try {
+        const data = await apiFetch('/reservations/checkout', {
+          method: 'POST',
+          body: {
+            event_id: parseInt(eventId),
+            formula_id: selectedFormulaId,
+            quantity: quantity,
+          },
+        });
+        window.location.href = data.checkout_url;
+      } catch (err) {
+        showAlert(alertBox, err.message);
+        btn.disabled = false;
+        btn.textContent = 'Réserver et payer';
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
