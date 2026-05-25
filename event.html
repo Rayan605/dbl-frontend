@@ -1,201 +1,153 @@
 <!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Soirée — Nocturna</title>
+<html lang="fr"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Soirée — Liste Party</title>
   <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-  <div id="nav"></div>
+</head><body>
+<div id="nav"></div>
+<div class="container"><div id="alertBox"></div></div>
+<div id="pageContent" class="container"><div class="empty-state">Chargement...</div></div>
 
-  <div class="container">
-    <div id="alertBox"></div>
-    <div id="eventContent" class="empty">Chargement…</div>
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="footer-brand">Liste <span>Party</span></div><div class="footer-sub">Dans le bon.</div></div>
+    <div class="footer-right"><div class="mono text-smoke">Paiement sécurisé — Stripe</div></div>
   </div>
+</footer>
 
-  <script src="js/config.js"></script>
-  <script src="js/api.js"></script>
-  <script>
-    renderNav('home');
-    const params = new URLSearchParams(window.location.search);
-    const eventId = params.get('id');
-    const cancelled = params.get('cancelled');
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script>
+renderNav('home');
+const params  = new URLSearchParams(window.location.search);
+const eventId = params.get('id');
+if (params.get('cancelled')) showAlert(document.getElementById('alertBox'), 'Paiement annulé. Aucun débit effectué.', 'info');
 
-    if (cancelled) {
-      showAlert(document.getElementById('alertBox'), 'Paiement annulé. Aucune charge n\'a été effectuée.');
-    }
+let selectedFormulaId = null;
 
-    let selectedFormulaId = null;
-    let quantity = 1;
-    let currentEvent = null;
+async function load() {
+  const pc = document.getElementById('pageContent');
+  try {
+    const [ev, formulas] = await Promise.all([apiFetch(`/events/${eventId}`), apiFetch('/formulas')]);
+    render(ev, formulas);
+  } catch(err) { pc.innerHTML = `<div class="empty-state">Erreur : ${err.message}</div>`; }
+}
 
-    async function load() {
-      const container = document.getElementById('eventContent');
-      try {
-        const [event, formulas] = await Promise.all([
-          apiFetch(`/events/${eventId}`),
-          apiFetch('/formulas'),
-        ]);
-        currentEvent = event;
-        render(event, formulas);
-      } catch (err) {
-        container.innerHTML = `<div class="empty">Erreur : ${err.message}</div>`;
-      }
-    }
-
-    function render(ev, formulas) {
-      const full = ev.seats_left <= 0;
-      const container = document.getElementById('eventContent');
-      container.classList.remove('empty');
-      container.innerHTML = `
-        <section class="event-hero">
-          <div class="event-gallery fade-up">
-            ${ev.images.length
-              ? `<img class="event-main-img" id="mainImg" src="${ev.images[0].url}" alt="${ev.title}">
-                 ${ev.images.length > 1 ? `<div class="event-thumbs">
-                   ${ev.images.map((img, i) => `<img class="event-thumb ${i === 0 ? 'active' : ''}" data-idx="${i}" src="${img.url}" alt="">`).join('')}
-                 </div>` : ''}`
-              : `<div class="event-main-img placeholder" style="display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-style:italic;color:var(--bone-mute);font-size:2rem;">Nocturna</div>`
-            }
-          </div>
-
-          <div class="event-info fade-up delay-1">
-            <div class="mono text-mute mb-2">${ev.department} · ${ev.city}</div>
-            <h1>${ev.title}</h1>
-
-            <div class="event-meta-grid">
-              <div class="meta-item">
-                <div class="mono">Date</div>
-                <div class="val">${formatDate(ev.date)}</div>
-              </div>
-              <div class="meta-item">
-                <div class="mono">Heure</div>
-                <div class="val">${formatTime(ev.date)}</div>
-              </div>
-              <div class="meta-item">
-                <div class="mono">Lieu</div>
-                <div class="val">${ev.city}</div>
-              </div>
-              <div class="meta-item">
-                <div class="mono">Places restantes</div>
-                <div class="val ${full ? 'text-blood' : ''}">${full ? 'Complet' : `${ev.seats_left} / ${ev.max_people}`}</div>
-              </div>
-            </div>
-
-            ${ev.description ? `<p class="event-desc">${ev.description}</p>` : ''}
-          </div>
-        </section>
-
-        <section class="section" style="border-top:1px solid var(--ink-line);padding-top:60px;">
-          <div class="section-head">
-            <div>
-              <div class="section-eyebrow mono">Choisissez</div>
-              <h2 class="section-title">Votre <em class="serif-italic text-blood">formule</em></h2>
+function render(ev, formulas) {
+  const full = ev.seats_left <= 0;
+  const urgent = !full && ev.seats_left <= 10;
+  document.title = `${ev.title} — Liste Party`;
+  const pc = document.getElementById('pageContent');
+  pc.innerHTML = `
+    <section class="event-hero-grid">
+      <div class="fade-up">
+        ${ev.images.length
+          ? `<img class="gallery-main" id="mainImg" src="${ev.images[0].url}" alt="${ev.title}">
+             ${ev.images.length > 1 ? `<div class="gallery-thumbs">${ev.images.map((img, i) =>
+               `<img class="gallery-thumb ${i===0?'active':''}" data-idx="${i}" src="${img.url}">`).join('')}</div>` : ''}`
+          : `<div class="gallery-main" style="display:flex;align-items:center;justify-content:center;color:var(--ghost);font-family:'Playfair Display',serif;font-style:italic;font-size:2rem;">Liste Party</div>`
+        }
+      </div>
+      <div class="fade-up d1">
+        <div class="mono text-gold mb-2">${ev.department} · ${ev.city}</div>
+        <h1 class="event-info-title">${ev.title}</h1>
+        ${ev.description ? `<p class="event-desc-text">${ev.description}</p>` : ''}
+        <div class="meta-strip">
+          <div class="meta-item"><div class="mono">Date</div><div class="meta-val">${formatDate(ev.date)}</div></div>
+          <div class="meta-item"><div class="mono">Heure</div><div class="meta-val">${formatTime(ev.date)}</div></div>
+          <div class="meta-item"><div class="mono">Lieu</div><div class="meta-val">${ev.city}</div></div>
+          <div class="meta-item">
+            <div class="mono">Places</div>
+            <div class="meta-val ${full ? 'urgent' : ''}">
+              ${full ? 'COMPLET' : urgent ? `🔥 ${ev.seats_left} restantes` : `${ev.seats_left} / ${ev.max_people}`}
             </div>
           </div>
+        </div>
+      </div>
+    </section>
 
-          <div class="formulas-list" id="formulasList">
-            ${formulas.map(f => `
-              <div class="formula" data-id="${f.id}">
-                <div class="formula-left">
-                  <div class="formula-name">${f.name}</div>
-                  <div class="formula-desc">${f.description || ''}</div>
-                </div>
-                <div class="formula-price">${formatPrice(f.price_cents)}</div>
-              </div>
-            `).join('')}
-          </div>
+    <section class="section fade-up d2">
+      <div class="section-head">
+        <div>
+          <div class="section-eyebrow mono">Une place, une formule</div>
+          <h2 class="section-title">Choisis ta <span class="gold">formule</span></h2>
+        </div>
+      </div>
 
-          <div class="qty-control">
-            <label>Nombre de places</label>
-            <button type="button" class="qty-btn" id="qtyMinus">−</button>
-            <span class="qty-val" id="qtyVal">1</span>
-            <button type="button" class="qty-btn" id="qtyPlus">+</button>
-          </div>
+      <div class="formulas-grid" id="formulasList">
+        ${formulas.map(f => `
+          <div class="formula-card" data-id="${f.id}" data-price="${f.price_cents}">
+            <div class="formula-left">
+              <div class="formula-name">${f.name}</div>
+              <div class="formula-desc">${f.description || ''}</div>
+              ${f.max_guests > 0 ? `<div class="formula-guests">✦ Tu peux inviter jusqu'à ${f.max_guests} personne${f.max_guests > 1 ? 's' : ''}</div>` : ''}
+            </div>
+            <div class="formula-right">
+              <div class="formula-price">${formatPrice(f.price_cents)}</div>
+              <div class="formula-check">✓</div>
+            </div>
+          </div>`).join('')}
+      </div>
 
-          <div id="resAlert"></div>
+      <div id="resAlert" style="margin-top:16px;"></div>
 
-          <button type="button" id="reserveBtn" class="btn btn-blood btn-block" ${full ? 'disabled' : ''}>
-            ${full ? 'Soirée complète' : 'Réserver et payer'}
-          </button>
+      <button id="reserveBtn" class="btn btn-gold btn-block btn-lg" ${full ? 'disabled' : ''} style="margin-top:16px;">
+        ${full ? 'Soirée complète' : 'Réserver et payer →'}
+      </button>
+      <p class="mono text-smoke text-center mt-2" style="font-size:0.65rem;">
+        1 place par personne · Paiement 100% sécurisé · Stripe · CB acceptées
+      </p>
+    </section>
+  `;
 
-          <p class="mono text-mute text-center mt-2" style="font-size:0.7rem;">
-            Paiement sécurisé par Stripe · CB acceptées
-          </p>
-        </section>
-      `;
+  // Galerie
+  document.querySelectorAll('.gallery-thumb').forEach(t => {
+    t.addEventListener('click', () => {
+      document.getElementById('mainImg').src = ev.images[+t.dataset.idx].url;
+      document.querySelectorAll('.gallery-thumb').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+    });
+  });
 
-      // Sélecteur de formule
-      document.querySelectorAll('.formula').forEach(el => {
-        el.addEventListener('click', () => {
-          document.querySelectorAll('.formula').forEach(x => x.classList.remove('selected'));
-          el.classList.add('selected');
-          selectedFormulaId = parseInt(el.dataset.id);
-        });
-      });
+  // Sélection formule (radio-like)
+  document.querySelectorAll('.formula-card').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.formula-card').forEach(x => x.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedFormulaId = +el.dataset.id;
+    });
+  });
 
-      // Galerie
-      document.querySelectorAll('.event-thumb').forEach(t => {
-        t.addEventListener('click', () => {
-          const idx = parseInt(t.dataset.idx);
-          document.getElementById('mainImg').src = ev.images[idx].url;
-          document.querySelectorAll('.event-thumb').forEach(x => x.classList.remove('active'));
-          t.classList.add('active');
-        });
-      });
+  document.getElementById('reserveBtn').addEventListener('click', reserve);
+}
 
-      // Quantité
-      const qtyVal = document.getElementById('qtyVal');
-      document.getElementById('qtyMinus').addEventListener('click', () => {
-        quantity = Math.max(1, quantity - 1);
-        qtyVal.textContent = quantity;
-      });
-      document.getElementById('qtyPlus').addEventListener('click', () => {
-        quantity = Math.min(20, ev.seats_left, quantity + 1);
-        qtyVal.textContent = quantity;
-      });
+async function reserve() {
+  const alertBox = document.getElementById('resAlert');
+  clearAlert(alertBox);
+  if (!auth.isLoggedIn()) {
+    window.location.href = `login.html?next=${encodeURIComponent(location.pathname + location.search)}`;
+    return;
+  }
+  if (!selectedFormulaId) {
+    showAlert(alertBox, 'Choisis une formule avant de continuer.');
+    return;
+  }
+  const btn = document.getElementById('reserveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Redirection Stripe...';
+  try {
+    const data = await apiFetch('/reservations/checkout', {
+      method: 'POST',
+      body: { event_id: +eventId, formula_id: selectedFormulaId, quantity: 1 }
+    });
+    window.location.href = data.checkout_url;
+  } catch(err) {
+    showAlert(alertBox, err.message);
+    btn.disabled = false;
+    btn.innerHTML = 'Réserver et payer →';
+  }
+}
 
-      // Réservation
-      document.getElementById('reserveBtn').addEventListener('click', reserve);
-    }
-
-    async function reserve() {
-      const alertBox = document.getElementById('resAlert');
-      clearAlert(alertBox);
-
-      if (!auth.isLoggedIn()) {
-        window.location.href = `login.html?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
-        return;
-      }
-
-      if (!selectedFormulaId) {
-        showAlert(alertBox, 'Veuillez sélectionner une formule.');
-        return;
-      }
-
-      const btn = document.getElementById('reserveBtn');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Redirection vers Stripe…';
-
-      try {
-        const data = await apiFetch('/reservations/checkout', {
-          method: 'POST',
-          body: {
-            event_id: parseInt(eventId),
-            formula_id: selectedFormulaId,
-            quantity: quantity,
-          },
-        });
-        window.location.href = data.checkout_url;
-      } catch (err) {
-        showAlert(alertBox, err.message);
-        btn.disabled = false;
-        btn.textContent = 'Réserver et payer';
-      }
-    }
-
-    load();
-  </script>
-</body>
-</html>
+load();
+</script>
+</body></html>

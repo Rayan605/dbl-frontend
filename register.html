@@ -1,111 +1,72 @@
 <!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Inscription — Nocturna</title>
+<html lang="fr"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inscription — Liste Party</title>
   <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-  <div id="nav"></div>
-
-  <div class="container">
-    <div class="auth-wrap fade-up" style="max-width: 560px;">
-      <div class="mono text-mute mb-2">Nouveau compte</div>
-      <h1 class="auth-title">Rejoignez<br>la <em class="serif-italic text-blood">nuit</em>.</h1>
-      <p class="auth-sub">Quelques informations et vous êtes dans la liste.</p>
-
-      <div id="alertBox"></div>
-
-      <form id="regForm" class="form">
-        <div class="form-row">
-          <div class="field">
-            <label for="first_name">Prénom</label>
-            <input type="text" id="first_name" required>
-          </div>
-          <div class="field">
-            <label for="last_name">Nom</label>
-            <input type="text" id="last_name" required>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="field">
-            <label for="email">Email</label>
-            <input type="email" id="email" required autocomplete="email">
-          </div>
-          <div class="field">
-            <label for="gender">Sexe</label>
-            <select id="gender" required>
-              <option value="">—</option>
-              <option value="F">Femme</option>
-              <option value="M">Homme</option>
-              <option value="X">Autre</option>
-            </select>
-          </div>
-        </div>
-
+</head><body>
+<div id="nav"></div>
+<div class="container">
+  <div class="auth-wrap fade-up" style="max-width:540px;">
+    <div class="mono text-gold mb-2">Inscription</div>
+    <h1 class="auth-title">Bienvenue<br><em class="text-gold">dans le bon.</em></h1>
+    <p class="auth-sub">Remplis, t'es mis sur la liste et t'as accès à tout.</p>
+    <div id="alertBox"></div>
+    <form id="regForm" class="form">
+      <div class="form-row">
+        <div class="field"><label>Prénom</label><input type="text" id="first_name" required></div>
+        <div class="field"><label>Nom</label><input type="text" id="last_name" required></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Email</label><input type="email" id="email" required autocomplete="email"></div>
         <div class="field">
-          <label for="password">Mot de passe (8 caractères min.)</label>
-          <input type="password" id="password" required minlength="8" autocomplete="new-password">
+          <label>Sexe</label>
+          <select id="gender" required>
+            <option value="">—</option>
+            <option value="F">Femme</option>
+            <option value="M">Homme</option>
+            <option value="X">Autre</option>
+          </select>
         </div>
-
-        <div class="form-row">
-          <div class="field">
-            <label for="instagram">Instagram (optionnel)</label>
-            <input type="text" id="instagram" placeholder="@pseudo">
-          </div>
-          <div class="field">
-            <label for="snapchat">Snapchat (optionnel)</label>
-            <input type="text" id="snapchat" placeholder="pseudo">
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Créer mon compte</button>
-      </form>
-
-      <p class="auth-switch">
-        Déjà inscrit·e ? <a href="login.html">Se connecter</a>
-      </p>
-    </div>
+      </div>
+      <div class="field">
+        <label>Insta / Snap <span style="color:var(--red);">*</span></label>
+        <input type="text" id="social" required placeholder="@ton_pseudo" autocomplete="off">
+        <span style="font-size:0.75rem;color:var(--smoke);margin-top:3px;">Ton compte Instagram ou Snapchat — obligatoire.</span>
+      </div>
+      <div class="field">
+        <label>Mot de passe <span style="color:var(--red);">*</span></label>
+        <input type="password" id="password" required minlength="8" autocomplete="new-password">
+        <span style="font-size:0.75rem;color:var(--smoke);margin-top:3px;">8 caractères minimum.</span>
+      </div>
+      <button type="submit" class="btn btn-gold btn-block" id="submitBtn">Je veux être dans le bon →</button>
+    </form>
+    <p class="auth-switch">Déjà sur la liste ? <a href="login.html">Se connecter</a></p>
   </div>
-
-  <script src="js/config.js"></script>
-  <script src="js/api.js"></script>
-  <script>
-    renderNav('register');
-    if (auth.isLoggedIn()) window.location.href = 'index.html';
-
-    const form = document.getElementById('regForm');
-    const alertBox = document.getElementById('alertBox');
-    const submitBtn = document.getElementById('submitBtn');
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      clearAlert(alertBox);
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner"></span> Création…';
-
-      const payload = {
-        email: document.getElementById('email').value.trim(),
-        password: document.getElementById('password').value,
+</div>
+<script src="js/config.js"></script><script src="js/api.js"></script>
+<script>
+  renderNav('register');
+  if (auth.isLoggedIn()) window.location.href = 'index.html';
+  const form = document.getElementById('regForm');
+  const alertBox = document.getElementById('alertBox');
+  const btn = document.getElementById('submitBtn');
+  form.addEventListener('submit', async e => {
+    e.preventDefault(); clearAlert(alertBox);
+    const social = document.getElementById('social').value.trim();
+    if (!social) { showAlert(alertBox, 'Ton insta ou snap est obligatoire.'); return; }
+    btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Création du compte...';
+    try {
+      const data = await apiFetch('/auth/register', { method:'POST', body:{
+        email:      document.getElementById('email').value.trim(),
+        password:   document.getElementById('password').value,
         first_name: document.getElementById('first_name').value.trim(),
-        last_name: document.getElementById('last_name').value.trim(),
-        gender: document.getElementById('gender').value,
-        instagram: document.getElementById('instagram').value.trim() || null,
-        snapchat: document.getElementById('snapchat').value.trim() || null,
-      };
-
-      try {
-        const data = await apiFetch('/auth/register', { method: 'POST', body: payload });
-        auth.setSession(data.access_token, data.user);
-        window.location.href = 'index.html';
-      } catch (err) {
-        showAlert(alertBox, err.message);
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Créer mon compte';
-      }
-    });
-  </script>
-</body>
-</html>
+        last_name:  document.getElementById('last_name').value.trim(),
+        gender:     document.getElementById('gender').value,
+        social,
+      }});
+      auth.setSession(data.access_token, data.user);
+      window.location.href = 'index.html';
+    } catch(err) { showAlert(alertBox, err.message); btn.disabled=false; btn.textContent="Je veux être dans le bon →"; }
+  });
+</script>
+</body></html>

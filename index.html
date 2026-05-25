@@ -1,99 +1,144 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nocturna — Soirées</title>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Liste Party — Dans le bon</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <div id="nav"></div>
+<div id="nav"></div>
 
-  <section class="hero container">
-    <span class="deco-number" style="top: 40px; right: -30px;">01</span>
-    <div class="hero-eyebrow mono fade-up">Édition 2026 — En direct</div>
-    <h1 class="hero-title fade-up delay-1">
-      Les nuits qui<br>
-      <em>comptent</em>.
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="container">
+    <div class="hero-eyebrow mono fade-up"><span class="text-gold">DLB</span> — Accès sur liste uniquement</div>
+    <h1 class="hero-title fade-up d1">
+      T'es<br>
+      <span class="gold">dans le</span><br>
+      <span class="outline">bon</span>.
     </h1>
-    <p class="hero-sub fade-up delay-2">
-      Réservez votre place pour les soirées les plus attendues. Sélection rigoureuse, capacité limitée, formules à la carte. Tout commence après minuit.
-    </p>
-    <div class="hero-cta fade-up delay-3">
-      <a href="#events" class="btn btn-blood">Voir les soirées →</a>
-      <a href="register.html" class="btn btn-ghost">Créer un compte</a>
+    <p class="hero-desc fade-up d2">Les meilleures soirées privées. Formules à la carte, places limitées. Si t'es là c'est que t'as ta place — fais pas attendre.</p>
+    <div class="hero-cta fade-up d3">
+      <a href="#soirees" class="btn btn-gold btn-lg">Voir les soirées →</a>
+      <a href="register.html" class="btn btn-outline btn-lg">Créer un compte</a>
     </div>
-  </section>
-
-  <section class="section container" id="events">
-    <div class="section-head">
-      <div>
-        <div class="section-eyebrow mono">À l'affiche</div>
-        <h2 class="section-title">Prochaines <em class="serif-italic text-blood">soirées</em></h2>
-      </div>
-      <span class="mono text-mute" id="eventsCount"></span>
+    <div class="hero-stats fade-up d4" id="heroStats">
+      <div><div class="stat-val">?</div><div class="stat-label">soirée à venir</div></div>
+      <div><div class="stat-val"><span>0</span>%</div><div class="stat-label">honte sur le dancefloor</div></div>
+      <div><div class="stat-val">DLB</div><div class="stat-label">Dans le bon</div></div>
     </div>
+  </div>
+</section>
 
-    <div id="eventsGrid" class="events-grid">
-      <div class="empty">Chargement…</div>
+<section class="section container" id="soirees">
+  <div class="section-head">
+    <div>
+      <div class="section-eyebrow mono">À l'affiche</div>
+      <h2 class="section-title">Prochaines <span class="gold">soirées</span></h2>
     </div>
-  </section>
+    <span class="mono text-smoke" id="eventsCount"></span>
+  </div>
+  <div id="eventsGrid" class="events-grid"><div class="empty-state">Chargement...</div></div>
+</section>
 
-  <footer class="footer">
-    <div class="container footer-inner">
-      <div>© Nocturna 2026 — Toutes les nuits réservées.</div>
-      <div class="mono">Paiement sécurisé par Stripe</div>
+<section class="section container" id="recap-section" style="display:none;">
+  <div class="section-head">
+    <div>
+      <div class="section-eyebrow mono">Les souvenirs</div>
+      <h2 class="section-title">Là où on <span class="gold">était</span></h2>
     </div>
-  </footer>
+    <a href="past.html" class="btn btn-outline">Toutes →</a>
+  </div>
+  <div id="recapGrid" class="recap-grid"></div>
+</section>
 
-  <script src="js/config.js"></script>
-  <script src="js/api.js"></script>
-  <script>
-    renderNav('home');
+<footer class="footer">
+  <div class="container footer-inner">
+    <div>
+      <div class="footer-brand">Liste <span>Party</span></div>
+      <div class="footer-sub">Dans le bon — T'es sur la liste ou t'es pas sur la liste.</div>
+    </div>
+    <div class="footer-right">
+      <div class="mono text-smoke">Paiement sécurisé par Stripe</div>
+      <div style="margin-top:6px;">© Liste Party 2026</div>
+    </div>
+  </div>
+</footer>
 
-    async function loadEvents() {
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script>
+  renderNav('home');
+
+  async function loadPage() {
+    try {
+      const [events, past] = await Promise.all([
+        apiFetch('/events?upcoming_only=true'),
+        apiFetch('/events/past'),
+      ]);
+
+      // Stats
+      document.querySelector('#heroStats .stat-val').textContent = events.length;
+
+      // Upcoming
       const grid = document.getElementById('eventsGrid');
-      try {
-        const events = await apiFetch('/events?upcoming_only=true');
-        document.getElementById('eventsCount').textContent = `${events.length} événement${events.length > 1 ? 's' : ''}`;
+      document.getElementById('eventsCount').textContent = `${events.length} événement${events.length!==1?'s':''}`;
 
-        if (!events.length) {
-          grid.innerHTML = '<div class="empty">Aucune soirée programmée pour le moment.</div>';
-          return;
-        }
-
+      if (!events.length) {
+        grid.innerHTML = '<div class="empty-state">Aucune soirée annoncée pour le moment. Reviens checker, ça bouge vite.</div>';
+      } else {
         grid.innerHTML = events.map((ev, i) => {
-          const firstImg = ev.images && ev.images[0];
+          const img = ev.images && ev.images[0];
           const full = ev.seats_left <= 0;
+          const urgent = ev.seats_left > 0 && ev.seats_left <= 10;
           return `
-            <a href="event.html?id=${ev.id}" class="event-card fade-up delay-${Math.min(i + 1, 4)}">
-              ${firstImg
-                ? `<img class="event-card-img" src="${firstImg.url}" alt="${ev.title}" loading="lazy">`
-                : `<div class="event-card-img placeholder">Nocturna</div>`
-              }
+            <a href="event.html?id=${ev.id}" class="event-card fade-up d${Math.min(i+1,4)}">
+              ${img
+                ? `<img class="event-card-img" src="${img.url}" alt="${ev.title}" loading="lazy">`
+                : `<div class="event-card-placeholder">Liste Party</div>`}
               <div class="event-card-body">
-                <div class="event-card-meta mono">
-                  <span>${formatDate(ev.date)}</span>
-                  <span>${ev.department}</span>
+                <div class="event-card-meta">
+                  <span class="mono text-smoke">${formatDate(ev.date)}</span>
+                  <span class="tag">${ev.department}</span>
                 </div>
                 <h3 class="event-card-title">${ev.title}</h3>
-                <div class="event-card-loc">${ev.city}</div>
+                <div class="event-card-loc">📍 ${ev.city}</div>
                 <div class="event-card-foot">
-                  <span class="seats-pill ${full ? 'full' : ''}">
-                    ${full ? 'Complet' : `${ev.seats_left} places`}
+                  <span class="seats-badge ${full?'full':urgent?'urgent':''}">
+                    ${full ? 'COMPLET' : urgent ? `🔥 ${ev.seats_left} places` : `${ev.seats_left} places`}
                   </span>
-                  <span class="arrow">→</span>
+                  <span class="card-arrow">→</span>
                 </div>
               </div>
-            </a>
-          `;
+            </a>`;
         }).join('');
-      } catch (err) {
-        grid.innerHTML = `<div class="empty">Impossible de charger les soirées : ${err.message}</div>`;
       }
-    }
 
-    loadEvents();
-  </script>
-</body>
-</html>
+      // Past highlights (3 derniers)
+      if (past.length) {
+        const recaps = past.filter(e => e.recap_images.length > 0).slice(0, 3);
+        if (recaps.length) {
+          document.getElementById('recap-section').style.display = '';
+          document.getElementById('recapGrid').innerHTML = recaps.map(ev => {
+            const img = ev.recap_images[0];
+            return `
+              <div class="recap-card">
+                <img src="${img.url}" alt="${ev.title}" loading="lazy">
+                <div class="recap-card-overlay">
+                  <div>
+                    <div class="recap-card-date mono">${formatDate(ev.date)}</div>
+                    <div class="recap-card-title">${ev.title}</div>
+                  </div>
+                </div>
+              </div>`;
+          }).join('');
+        }
+      }
+    } catch(err) {
+      document.getElementById('eventsGrid').innerHTML = `<div class="empty-state">Erreur : ${err.message}</div>`;
+    }
+  }
+
+  loadPage();
+</script>
+</body></html>

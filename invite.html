@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invitation — Liste Party</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head><body>
+<div id="nav"></div>
+<div class="container" style="max-width:540px;padding:60px 28px;">
+  <div id="pageContent"><div class="empty-state"><span class="spinner"></span> Chargement de l'invitation...</div></div>
+</div>
+
+<script src="js/config.js"></script><script src="js/api.js"></script>
+<script>
+renderNav();
+const token = new URLSearchParams(location.search).get('token');
+
+async function load() {
+  const pc = document.getElementById('pageContent');
+  if (!token) { pc.innerHTML = '<div class="alert">Lien invalide.</div>'; return; }
+  try {
+    const info = await apiFetch(`/invitations/${token}`);
+    if (!info.valid) { pc.innerHTML = '<div class="alert">Invitation invalide ou expirée.</div>'; return; }
+
+    pc.innerHTML = `
+      <div style="margin-bottom:8px;" class="mono text-gold">Invitation privée</div>
+      <h1 style="font-family:'Playfair Display',serif;font-size:2.4rem;color:var(--white);margin-bottom:8px;">T'es invité(e).</h1>
+      <p class="text-smoke" style="margin-bottom:28px;font-size:0.95rem;">
+        <strong style="color:var(--white);">${info.host_name}</strong> t'invite à la soirée <strong style="color:var(--gold);">${info.event_title}</strong>.
+      </p>
+      <div style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:22px;margin-bottom:24px;">
+        <div style="display:grid;gap:12px;">
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:10px;font-size:0.9rem;">
+            <span class="text-smoke">Date</span><span class="text-white">${formatDate(info.event_date)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:10px;font-size:0.9rem;">
+            <span class="text-smoke">Lieu</span><span class="text-white">${info.event_city}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:10px;font-size:0.9rem;">
+            <span class="text-smoke">Formule hôte</span><span class="text-white">${info.formula_name}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.9rem;">
+            <span class="text-smoke">Invitations restantes</span>
+            <span class="${info.spots_left===0?'text-red':'text-lime'}">${info.spots_left} / ${info.max_guests}</span>
+          </div>
+        </div>
+      </div>
+      <div id="joinArea">
+        ${info.spots_left === 0
+          ? `<div class="alert">Plus de place disponible pour cette invitation, c'est complet.</div>`
+          : auth.isLoggedIn()
+            ? `<div id="joinAlert"></div><button id="joinBtn" class="btn btn-lime btn-block btn-lg">Accepter l'invitation →</button>`
+            : `<div class="alert info" style="margin-bottom:16px;">Connecte-toi pour rejoindre la liste.</div>
+               <div style="display:flex;gap:12px;">
+                 <a href="login.html?next=${encodeURIComponent(location.href)}" class="btn btn-gold" style="flex:1;justify-content:center;">Connexion</a>
+                 <a href="register.html?next=${encodeURIComponent(location.href)}" class="btn btn-outline" style="flex:1;justify-content:center;">Inscription</a>
+               </div>`
+        }
+      </div>
+    `;
+
+    const joinBtn = document.getElementById('joinBtn');
+    if (joinBtn) {
+      joinBtn.addEventListener('click', async () => {
+        const alertBox = document.getElementById('joinAlert');
+        clearAlert(alertBox);
+        joinBtn.disabled = true;
+        joinBtn.innerHTML = '<span class="spinner"></span> Inscription en cours...';
+        try {
+          const result = await apiFetch(`/invitations/${token}/join`, { method: 'POST' });
+          // Affiche le QR invité directement
+          const qrData = await apiFetch(`/invitations/guest/${result.id}/qr`);
+          const joinArea = document.getElementById('joinArea');
+          joinArea.innerHTML = `
+            <div class="alert success" style="margin-bottom:20px;">✓ Tu es sur la liste ! Voilà ton QR, présente-le à l'entrée.</div>`;
+          const qrDiv = document.createElement('div');
+          joinArea.appendChild(qrDiv);
+          renderQrTicket(qrDiv, qrData, true);
+        } catch(err) {
+          showAlert(document.getElementById('joinAlert'), err.message);
+          joinBtn.disabled = false;
+          joinBtn.textContent = "Accepter l'invitation →";
+        }
+      });
+    }
+  } catch(err) {
+    pc.innerHTML = `<div class="alert">Invitation invalide ou expirée. Peut-être que tous les spots sont pris.</div>`;
+  }
+}
+
+load();
+</script>
+</body></html>

@@ -1,204 +1,302 @@
 <!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin — Nocturna</title>
+<html lang="fr"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — Liste Party</title>
   <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-  <div id="nav"></div>
+</head><body>
+<div id="nav"></div>
+<section class="container" style="padding:56px 0;">
 
-  <section class="container" style="padding: 60px 0;">
-    <div class="section-head">
-      <div>
-        <div class="section-eyebrow mono">Administration</div>
-        <h2 class="section-title">Coulisses</h2>
+  <div class="section-head">
+    <div>
+      <div class="section-eyebrow mono">Back-office</div>
+      <h2 class="section-title">Zone <span class="gold">admin</span></h2>
+    </div>
+  </div>
+
+  <!-- CRÉER SOIRÉE -->
+  <div style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:18px;">Créer une <span class="text-gold">soirée</span></h3>
+    <div id="createAlert"></div>
+    <form id="createForm" class="form">
+      <div class="field"><label>Titre</label><input type="text" id="title" required></div>
+      <div class="form-row">
+        <div class="field"><label>Date & heure</label><input type="datetime-local" id="date" required></div>
+        <div class="field"><label>Places max</label><input type="number" id="max_people" min="1" required></div>
       </div>
+      <div class="form-row">
+        <div class="field"><label>Ville</label><input type="text" id="city" required></div>
+        <div class="field"><label>Département</label><input type="text" id="department" required placeholder="ex: 75"></div>
+      </div>
+      <div class="field"><label>Description (ton parlé urbain, qu'est-ce qui se passe ce soir)</label><textarea id="description" placeholder="Ce soir on sort les grands bacs..."></textarea></div>
+      <div class="field"><label>Images promo (jpg, png, webp · 8 Mo max)</label><input type="file" id="images" multiple accept="image/*"></div>
+      <button type="submit" class="btn btn-gold" id="createBtn">Publier la soirée</button>
+    </form>
+  </div>
+
+  <!-- RECAP PHOTOS -->
+  <div style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:6px;">Photos <span class="text-lime">souvenir</span></h3>
+    <p class="text-smoke mb-4" style="font-size:0.9rem;">Ajoute des photos d'une soirée passée. Elle sera automatiquement marquée comme "soirée passée".</p>
+    <div class="form-row" style="margin-bottom:14px;">
+      <div class="field"><label>Soirée</label><select id="recapEventId"><option value="">Choisir...</option></select></div>
+      <div class="field"><label>Photos (plusieurs OK)</label><input type="file" id="recapImages" multiple accept="image/*"></div>
     </div>
+    <div id="recapAlert"></div>
+    <button class="btn btn-ghost" id="recapBtn">Ajouter les photos</button>
+  </div>
 
-    <!-- CRÉATION D'ÉVÉNEMENT -->
-    <div style="border:1px solid var(--ink-line);padding:32px;margin-bottom:32px;background:var(--ink-soft);">
-      <h3 style="font-family:'Fraunces',serif;font-size:1.6rem;margin-bottom:20px;">Créer une <em class="serif-italic text-blood">soirée</em></h3>
-      <div id="createAlert"></div>
-      <form id="createForm" class="form">
-        <div class="field">
-          <label>Titre</label>
-          <input type="text" id="title" required>
-        </div>
-        <div class="form-row">
-          <div class="field">
-            <label>Date & heure</label>
-            <input type="datetime-local" id="date" required>
+  <!-- FORMULES -->
+  <div style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:6px;">Les <span class="text-gold">formules</span></h3>
+    <p class="text-smoke mb-4" style="font-size:0.88rem;">Prix en centimes (15€ = 1500). Invitations : nombre max d'invités pour cette formule (0 = pas d'invitations).</p>
+    <div id="formulasAdmin"></div>
+  </div>
+
+  <!-- LISTE DES SOIRÉES -->
+  <div style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;">
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:16px;">Soirées publiées</h3>
+    <div id="eventsAdmin"></div>
+  </div>
+
+</section>
+
+<script src="js/config.js"></script><script src="js/api.js"></script>
+<script>
+renderNav('admin');
+if (!requireAuth()) {}
+if (!auth.isAdmin()) {
+  document.body.innerHTML = '<div class="container"><div class="empty-state">Zone réservée aux admins.</div></div>';
+}
+
+// CRÉER SOIRÉE
+document.getElementById('createForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const alertBox = document.getElementById('createAlert');
+  clearAlert(alertBox);
+  const btn = document.getElementById('createBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Publication...';
+  const fd = new FormData();
+  fd.append('title', document.getElementById('title').value);
+  fd.append('description', document.getElementById('description').value);
+  fd.append('date', new Date(document.getElementById('date').value).toISOString());
+  fd.append('city', document.getElementById('city').value);
+  fd.append('department', document.getElementById('department').value);
+  fd.append('max_people', document.getElementById('max_people').value);
+  for (const f of document.getElementById('images').files) fd.append('images', f);
+  try {
+    await apiFetch('/events', { method: 'POST', body: fd });
+    showAlert(alertBox, 'Soirée publiée, les gars vont kiffer.', 'success');
+    document.getElementById('createForm').reset();
+    loadEvents();
+  } catch(err) { showAlert(alertBox, err.message); }
+  finally { btn.disabled=false; btn.textContent='Publier la soirée'; }
+});
+
+// RECAP PHOTOS
+document.getElementById('recapBtn').addEventListener('click', async () => {
+  const alertBox = document.getElementById('recapAlert');
+  clearAlert(alertBox);
+  const evId = document.getElementById('recapEventId').value;
+  const files = document.getElementById('recapImages').files;
+  if (!evId) { showAlert(alertBox, 'Choisis une soirée.'); return; }
+  if (!files.length) { showAlert(alertBox, 'Ajoute au moins une photo.'); return; }
+  const btn = document.getElementById('recapBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Upload...';
+  const fd = new FormData();
+  for (const f of files) fd.append('images', f);
+  try {
+    await apiFetch(`/events/${evId}/recap-images`, { method: 'POST', body: fd });
+    showAlert(alertBox, 'Photos ajoutées, la mémoire est là.', 'success');
+    document.getElementById('recapImages').value = '';
+    loadEvents();
+  } catch(err) { showAlert(alertBox, err.message); }
+  finally { btn.disabled=false; btn.textContent='Ajouter les photos'; }
+});
+
+// FORMULES
+async function loadFormulas() {
+  const container = document.getElementById('formulasAdmin');
+  try {
+    const formulas = await apiFetch('/formulas');
+    container.innerHTML = formulas.map(f => `
+      <div style="display:grid;grid-template-columns:40px 1fr 1.5fr 110px 110px auto;gap:10px;align-items:end;padding:12px 0;border-top:1px solid var(--line);" data-id="${f.id}">
+        <div class="mono text-smoke" style="padding-bottom:14px;">#${f.id}</div>
+        <div class="field"><label>Nom</label><input type="text" class="f-name" value="${f.name.replace(/"/g,'&quot;')}"></div>
+        <div class="field"><label>Description</label><input type="text" class="f-desc" value="${(f.description||'').replace(/"/g,'&quot;')}"></div>
+        <div class="field"><label>Prix (cts)</label><input type="number" class="f-price" value="${f.price_cents}" min="0"></div>
+        <div class="field"><label>Invités max</label><input type="number" class="f-guests" value="${f.max_guests||0}" min="0"></div>
+        <button class="btn btn-ghost f-save" style="padding:13px 14px;font-size:0.8rem;">Save</button>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.f-save').forEach(btn => {
+      btn.addEventListener('click', async e => {
+        const row = e.target.closest('[data-id]');
+        const id = row.dataset.id;
+        btn.disabled=true; btn.textContent='...';
+        try {
+          await apiFetch(`/formulas/${id}`, { method:'PATCH', body:{
+            name: row.querySelector('.f-name').value,
+            description: row.querySelector('.f-desc').value,
+            price_cents: +row.querySelector('.f-price').value,
+            max_guests: +row.querySelector('.f-guests').value,
+          }});
+          btn.textContent='✓'; setTimeout(()=>{btn.textContent='Save';btn.disabled=false;},1200);
+        } catch(err) { alert(err.message); btn.textContent='Save'; btn.disabled=false; }
+      });
+    });
+  } catch(err) { container.innerHTML = `<div class="text-smoke">${err.message}</div>`; }
+}
+
+// LISTE SOIRÉES
+async function loadEvents() {
+  const container = document.getElementById('eventsAdmin');
+  const recapSel = document.getElementById('recapEventId');
+  try {
+    const events = await apiFetch('/events?upcoming_only=false');
+    const past = await apiFetch('/events/past');
+    const all = [...events, ...past].reduce((acc, e) => { if (!acc.find(x=>x.id===e.id)) acc.push(e); return acc; }, []);
+
+    // Mise à jour du select recap
+    recapSel.innerHTML = '<option value="">Choisir...</option>' +
+      all.map(e => `<option value="${e.id}">${e.title} (${new Date(e.date).toLocaleDateString('fr-FR')})</option>`).join('');
+
+    if (!all.length) { container.innerHTML = '<div class="text-smoke">Aucune soirée.</div>'; return; }
+
+    container.innerHTML = all.map(ev => `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:14px 0;border-top:1px solid var(--line);gap:14px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:220px;">
+          <div class="mono text-smoke">${formatDate(ev.date)} · ${ev.department}</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--white);">${ev.title}</div>
+          <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+            <span class="tag">${ev.seats_taken}/${ev.max_people} places</span>
+            <span class="tag ${ev.is_past?'tag-red':'tag-gold'}">${ev.is_past?'PASSÉE':'À VENIR'}</span>
           </div>
-          <div class="field">
-            <label>Places maximum</label>
-            <input type="number" id="max_people" min="1" required>
-          </div>
         </div>
-        <div class="form-row">
-          <div class="field">
-            <label>Ville</label>
-            <input type="text" id="city" required>
-          </div>
-          <div class="field">
-            <label>Département</label>
-            <input type="text" id="department" required placeholder="ex : 75">
-          </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="event.html?id=${ev.id}" class="btn btn-ghost" style="padding:9px 14px;font-size:0.8rem;">Voir</a>
+          <button class="btn btn-ghost toggle-past" data-id="${ev.id}" data-past="${ev.is_past}" style="padding:9px 14px;font-size:0.8rem;">
+            ${ev.is_past?'Remettre à venir':'Marquer passée'}
+          </button>
+          <button class="btn btn-red del-btn" data-id="${ev.id}" style="padding:9px 14px;font-size:0.8rem;">Suppr.</button>
         </div>
-        <div class="field">
-          <label>Description</label>
-          <textarea id="description" placeholder="Une nuit pour..."></textarea>
-        </div>
-        <div class="field">
-          <label>Images du lieu (jpg, png, webp · 8 Mo max chacune)</label>
-          <input type="file" id="images" multiple accept="image/jpeg,image/png,image/webp,image/avif">
-        </div>
-        <button type="submit" class="btn btn-blood" id="createBtn">Publier la soirée</button>
-      </form>
-    </div>
+      </div>`).join('');
 
-    <!-- GESTION DES FORMULES -->
-    <div style="border:1px solid var(--ink-line);padding:32px;margin-bottom:32px;background:var(--ink-soft);">
-      <h3 style="font-family:'Fraunces',serif;font-size:1.6rem;margin-bottom:20px;">Formules de réservation</h3>
-      <p class="text-mute mb-4" style="font-size:0.9rem;">Modifiez ici les 5 formules. Le prix est en centimes (15€ = 1500).</p>
-      <div id="formulasAdmin"></div>
-    </div>
-
-    <!-- LISTE DES SOIRÉES -->
-    <div style="border:1px solid var(--ink-line);padding:32px;background:var(--ink-soft);">
-      <h3 style="font-family:'Fraunces',serif;font-size:1.6rem;margin-bottom:20px;">Soirées publiées</h3>
-      <div id="eventsAdmin"></div>
-    </div>
-  </section>
-
-  <script src="js/config.js"></script>
-  <script src="js/api.js"></script>
-  <script>
-    renderNav('admin');
-    if (!requireAuth()) {}
-    if (!auth.isAdmin()) {
-      document.body.innerHTML = '<div class="container"><div class="empty">Accès réservé aux administrateurs.</div></div>';
-    }
-
-    // -------- CRÉATION ÉVÉNEMENT
-    document.getElementById('createForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const alertBox = document.getElementById('createAlert');
-      clearAlert(alertBox);
-      const btn = document.getElementById('createBtn');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Publication…';
-
-      const fd = new FormData();
-      fd.append('title', document.getElementById('title').value);
-      fd.append('description', document.getElementById('description').value);
-      // datetime-local renvoie "2026-06-12T22:00" → on convertit en ISO avec timezone locale
-      const dt = document.getElementById('date').value;
-      fd.append('date', new Date(dt).toISOString());
-      fd.append('city', document.getElementById('city').value);
-      fd.append('department', document.getElementById('department').value);
-      fd.append('max_people', document.getElementById('max_people').value);
-
-      const files = document.getElementById('images').files;
-      for (const f of files) fd.append('images', f);
-
-      try {
-        await apiFetch('/events', { method: 'POST', body: fd });
-        showAlert(alertBox, 'Soirée créée avec succès !', 'success');
-        document.getElementById('createForm').reset();
-        loadEvents();
-      } catch (err) {
-        showAlert(alertBox, err.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Publier la soirée';
-      }
+    container.querySelectorAll('.del-btn').forEach(b => {
+      b.addEventListener('click', async () => {
+        if (!confirm('Supprimer cette soirée ?')) return;
+        try { await apiFetch(`/events/${b.dataset.id}`, { method:'DELETE' }); loadEvents(); }
+        catch(err) { alert(err.message); }
+      });
     });
 
-    // -------- FORMULES
-    async function loadFormulas() {
-      const container = document.getElementById('formulasAdmin');
-      try {
-        const formulas = await apiFetch('/formulas');
-        container.innerHTML = formulas.map(f => `
-          <div style="display:grid;grid-template-columns:60px 1fr 1fr 140px auto;gap:12px;align-items:end;padding:14px 0;border-top:1px solid var(--ink-line);" data-id="${f.id}">
-            <div class="mono text-mute" style="padding-bottom:14px;">#${f.id}</div>
-            <div class="field"><label>Nom</label><input type="text" class="f-name" value="${f.name.replace(/"/g, '&quot;')}"></div>
-            <div class="field"><label>Description</label><input type="text" class="f-desc" value="${(f.description || '').replace(/"/g, '&quot;')}"></div>
-            <div class="field"><label>Prix (centimes)</label><input type="number" class="f-price" value="${f.price_cents}" min="0"></div>
-            <button class="btn btn-ghost f-save" style="padding:14px 18px;">Enregistrer</button>
-          </div>
-        `).join('');
+    container.querySelectorAll('.toggle-past').forEach(b => {
+      b.addEventListener('click', async () => {
+        const isPast = b.dataset.past === 'true' || b.dataset.past === '1';
+        try {
+          await apiFetch(`/events/${b.dataset.id}/mark-past?is_past=${!isPast}`, { method:'PATCH' });
+          loadEvents();
+        } catch(err) { alert(err.message); }
+      });
+    });
+  } catch(err) { container.innerHTML = `<div class="text-smoke">${err.message}</div>`; }
+}
 
-        container.querySelectorAll('.f-save').forEach(btn => {
-          btn.addEventListener('click', async (e) => {
-            const row = e.target.closest('[data-id]');
-            const id = row.dataset.id;
-            btn.disabled = true;
-            btn.textContent = '…';
-            try {
-              await apiFetch(`/formulas/${id}`, {
-                method: 'PATCH',
-                body: {
-                  name: row.querySelector('.f-name').value,
-                  description: row.querySelector('.f-desc').value,
-                  price_cents: parseInt(row.querySelector('.f-price').value),
-                },
-              });
-              btn.textContent = 'OK ✓';
-              setTimeout(() => { btn.textContent = 'Enregistrer'; btn.disabled = false; }, 1200);
-            } catch (err) {
-              alert(err.message);
-              btn.textContent = 'Enregistrer';
-              btn.disabled = false;
-            }
-          });
-        });
-      } catch (err) {
-        container.innerHTML = `<div class="text-mute">${err.message}</div>`;
-      }
-    }
+loadFormulas();
+loadEvents();
+</script>
+</body></html>
+<script>
+// Ajout de la section Users — injectée dans le DOM existant
+document.addEventListener('DOMContentLoaded', () => {
+  if (!auth.isAdmin()) return;
 
-    // -------- LISTE DES ÉVÉNEMENTS
-    async function loadEvents() {
-      const container = document.getElementById('eventsAdmin');
-      try {
-        const events = await apiFetch('/events?upcoming_only=false');
-        if (!events.length) {
-          container.innerHTML = '<div class="text-mute">Aucune soirée pour l\'instant.</div>';
-          return;
-        }
-        container.innerHTML = events.map(ev => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-top:1px solid var(--ink-line);gap:14px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:220px;">
-              <div class="mono text-mute">${formatDate(ev.date)} · ${ev.department}</div>
-              <div style="font-family:'Fraunces',serif;font-size:1.2rem;">${ev.title}</div>
-              <div class="text-mute" style="font-size:0.88rem;">${ev.city} · ${ev.seats_taken}/${ev.max_people} places</div>
-            </div>
-            <div style="display:flex;gap:8px;">
-              <a class="btn btn-ghost" href="event.html?id=${ev.id}" style="padding:10px 16px;font-size:0.8rem;">Voir</a>
-              <button class="btn btn-ghost del-btn" data-id="${ev.id}" style="padding:10px 16px;font-size:0.8rem;border-color:var(--blood);color:var(--blood);">Supprimer</button>
-            </div>
-          </div>
-        `).join('');
+  // Injecter une section users après les formules
+  const usersSection = document.createElement('div');
+  usersSection.style = 'background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;';
+  usersSection.innerHTML = `
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:6px;">
+      Utilisateurs & <span class="text-lime">Scanners</span>
+    </h3>
+    <p class="text-smoke mb-4" style="font-size:0.88rem;">Active le mode scanner pour les personnes qui scannent les QR à l'entrée.</p>
+    <input type="text" id="userSearch" placeholder="Rechercher par nom ou email..." style="background:var(--deep);border:1px solid var(--line);border-radius:4px;padding:10px 16px;color:var(--bone);font-family:inherit;font-size:0.9rem;width:100%;margin-bottom:14px;">
+    <div id="usersAdmin"></div>
+  `;
 
-        container.querySelectorAll('.del-btn').forEach(b => {
-          b.addEventListener('click', async () => {
-            if (!confirm('Supprimer cette soirée ?')) return;
-            try {
-              await apiFetch(`/events/${b.dataset.id}`, { method: 'DELETE' });
-              loadEvents();
-            } catch (err) { alert(err.message); }
-          });
-        });
-      } catch (err) {
-        container.innerHTML = `<div class="text-mute">${err.message}</div>`;
-      }
-    }
+  // Insérer avant la liste des soirées (dernier enfant)
+  const container = document.querySelector('section.container');
+  const lastDiv = container.lastElementChild;
+  container.insertBefore(usersSection, lastDiv);
 
-    loadFormulas();
-    loadEvents();
-  </script>
-</body>
-</html>
+  loadUsers();
+
+  document.getElementById('userSearch').addEventListener('input', e => {
+    filterUsers(e.target.value.toLowerCase());
+  });
+});
+
+let allUsers = [];
+
+async function loadUsers() {
+  const container = document.getElementById('usersAdmin');
+  if (!container) return;
+  try {
+    allUsers = await apiFetch('/admin/users');
+    renderUsers(allUsers);
+  } catch(err) {
+    container.innerHTML = `<div class="text-smoke">${err.message}</div>`;
+  }
+}
+
+function filterUsers(q) {
+  if (!q) { renderUsers(allUsers); return; }
+  renderUsers(allUsers.filter(u =>
+    `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(q)
+  ));
+}
+
+function renderUsers(users) {
+  const container = document.getElementById('usersAdmin');
+  if (!container) return;
+  if (!users.length) { container.innerHTML = '<div class="text-smoke" style="padding:12px 0;">Aucun résultat.</div>'; return; }
+  container.innerHTML = users.map(u => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--line);gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div style="color:var(--white);font-weight:600;">${u.first_name} ${u.last_name}</div>
+        <div style="color:var(--smoke);font-size:0.82rem;">${u.email} · ${u.social || '—'}</div>
+        <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;">
+          ${u.is_admin ? '<span class="tag tag-gold">Admin</span>' : ''}
+          ${u.is_scanner ? '<span class="tag tag-lime">Scanner</span>' : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:0.85rem;color:${u.is_scanner?'var(--lime)':'var(--smoke)'};">
+          <input type="checkbox" ${u.is_scanner ? 'checked' : ''} onchange="toggleScanner(${u.id}, this.checked, this)"
+            style="width:16px;height:16px;cursor:pointer;accent-color:var(--lime);">
+          Scanner
+        </label>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function toggleScanner(uid, val, checkbox) {
+  checkbox.disabled = true;
+  const token = auth.token;
+  try {
+    await apiFetch(`/admin/users/${uid}/scanner?is_scanner=${val}`, { method: 'PATCH' });
+    // Mettre à jour le cache local
+    const u = allUsers.find(x => x.id === uid);
+    if (u) u.is_scanner = val ? 1 : 0;
+    renderUsers(allUsers.filter(x => {
+      const q = document.getElementById('userSearch')?.value.toLowerCase() || '';
+      return !q || `${x.first_name} ${x.last_name} ${x.email}`.toLowerCase().includes(q);
+    }));
+  } catch(err) {
+    alert(err.message);
+    checkbox.checked = !val;
+    checkbox.disabled = false;
+  }
+}
+</script>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Soirées passées — Liste Party</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="nav"></div>
+
+<section class="container" style="padding: 60px 0;">
+  <div class="section-head">
+    <div>
+      <div class="section-eyebrow mono">La mémoire</div>
+      <h2 class="section-title">Là où on <span class="gold">était</span></h2>
+    </div>
+  </div>
+  <p class="text-smoke mb-4" style="font-size:0.95rem;">Les archives. Ceux qui étaient là savent. Pour les autres, c'est l'occasion de pas rater la prochaine.</p>
+
+  <div id="pastList"><div class="empty-state">Chargement...</div></div>
+</section>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="footer-brand">Liste <span>Party</span></div><div class="footer-sub">Dans le bon.</div></div>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script>
+  renderNav('past');
+
+  async function load() {
+    const container = document.getElementById('pastList');
+    try {
+      const events = await apiFetch('/events/past');
+      if (!events.length) {
+        container.innerHTML = '<div class="empty-state">Aucune soirée archivée pour l\'instant. Ça vient.</div>';
+        return;
+      }
+      container.innerHTML = events.map(ev => {
+        const hasRecap = ev.recap_images.length > 0;
+        return `
+          <div style="margin-bottom:48px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+              <div>
+                <div class="mono text-smoke mb-2">${formatDate(ev.date)} — ${ev.city}</div>
+                <h3 style="font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--white);">${ev.title}</h3>
+              </div>
+              <div style="display:flex;gap:10px;align-items:center;">
+                <span class="tag">${ev.seats_taken} participants</span>
+              </div>
+            </div>
+            ${hasRecap
+              ? `<div class="recap-grid">
+                   ${ev.recap_images.map(img => `
+                     <div class="recap-card">
+                       <img src="${img.url}" alt="${ev.title}" loading="lazy">
+                       <div class="recap-card-overlay"></div>
+                     </div>`).join('')}
+                 </div>`
+              : `<div style="padding:32px;background:var(--panel);border:1px solid var(--line);border-radius:4px;text-align:center;color:var(--smoke);font-style:italic;">Photos à venir...</div>`
+            }
+          </div>`;
+      }).join('<hr style="border:none;border-top:1px solid var(--line);margin:40px 0;">');
+    } catch(err) {
+      container.innerHTML = `<div class="empty-state">Erreur : ${err.message}</div>`;
+    }
+  }
+
+  load();
+</script>
+</body></html>

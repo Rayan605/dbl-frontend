@@ -1,65 +1,60 @@
 <!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Réservation confirmée — Nocturna</title>
+<html lang="fr"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Paiement confirmé — Liste Party</title>
   <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-  <div id="nav"></div>
+</head><body>
+<div id="nav"></div>
+<div class="container" style="max-width:500px;padding:60px 28px;">
+  <div id="pageContent" class="empty-state"><span class="spinner"></span> Confirmation en cours...</div>
+</div>
 
-  <div class="container">
-    <div class="auth-wrap fade-up" style="text-align:center;">
-      <div class="mono text-mute mb-2">Paiement validé</div>
-      <h1 class="auth-title">Vous êtes <em class="serif-italic text-blood">in</em>.</h1>
-      <p class="auth-sub" id="confirmText">On vérifie votre paiement…</p>
+<script src="js/config.js"></script><script src="js/api.js"></script>
+<script>
+renderNav('me');
+const sessionId = new URLSearchParams(location.search).get('session_id');
 
-      <div id="resCard"></div>
+async function confirm() {
+  const pc = document.getElementById('pageContent');
+  pc.className = '';
+  if (!sessionId) { pc.innerHTML = '<div class="alert">Session introuvable.</div>'; return; }
+  if (!auth.isLoggedIn()) {
+    pc.innerHTML = `<h1 style="font-family:'Playfair Display',serif;font-size:2rem;color:var(--white);margin-bottom:12px;">T'es dans le bon.</h1>
+      <p class="text-smoke mb-4">Paiement reçu. Connecte-toi pour accéder à ton QR code.</p>
+      <a href="login.html" class="btn btn-gold btn-block">Se connecter →</a>`;
+    return;
+  }
+  try {
+    const res = await apiFetch(`/reservations/confirm?session_id=${encodeURIComponent(sessionId)}`);
+    const paid = res.status === 'paid';
 
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px;">
-        <a href="my-reservations.html" class="btn btn-primary">Mes réservations</a>
-        <a href="index.html" class="btn btn-ghost">Retour à l'accueil</a>
-      </div>
-    </div>
-  </div>
+    pc.innerHTML = `
+      <div class="mono text-lime mb-2">✓ Paiement validé</div>
+      <h1 style="font-family:'Playfair Display',serif;font-size:2.6rem;color:var(--white);margin-bottom:10px;line-height:1;">T'es <span style="color:var(--gold);font-style:italic;">dans le bon</span>.</h1>
+      <p class="text-smoke" style="margin-bottom:28px;">${paid ? 'Ta place est réservée. On se voit là-bas.' : 'Paiement en cours de traitement.'}</p>
+    `;
 
-  <script src="js/config.js"></script>
-  <script src="js/api.js"></script>
-  <script>
-    renderNav();
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get('session_id');
-
-    async function confirm() {
-      if (!sessionId) {
-        document.getElementById('confirmText').textContent = 'Aucune session à confirmer.';
-        return;
-      }
-      if (!auth.isLoggedIn()) {
-        document.getElementById('confirmText').innerHTML = 'Connectez-vous pour voir le détail de votre réservation. <br><a href="login.html" class="text-blood">Se connecter</a>';
-        return;
-      }
+    if (paid && res.qr_token) {
       try {
-        const res = await apiFetch(`/reservations/confirm?session_id=${encodeURIComponent(sessionId)}`);
-        document.getElementById('confirmText').textContent =
-          res.status === 'paid'
-            ? 'Votre place est réservée. À très vite.'
-            : 'Votre paiement est en cours de traitement.';
-        document.getElementById('resCard').innerHTML = `
-          <div style="margin-top:24px;padding:20px;border:1px solid var(--ink-line);text-align:left;">
-            <div class="mono text-mute mb-1">${formatDate(res.event_date)}</div>
-            <h3 style="font-family:'Fraunces',serif;font-size:1.4rem;margin-bottom:8px;">${res.event_title}</h3>
-            <div>${res.formula_name} · ${res.quantity} place${res.quantity > 1 ? 's' : ''}</div>
-            ${res.amount_paid_cents ? `<div class="text-blood" style="font-family:'Fraunces',serif;font-size:1.6rem;margin-top:8px;">${formatPrice(res.amount_paid_cents)}</div>` : ''}
-          </div>
-        `;
-      } catch (err) {
-        document.getElementById('confirmText').textContent = 'Erreur de confirmation : ' + err.message;
-      }
+        const qrData = await apiFetch(`/reservations/${res.id}/qr`);
+        const qrDiv = document.createElement('div');
+        pc.appendChild(qrDiv);
+        renderQrTicket(qrDiv, qrData, false);
+      } catch(e) { /* QR pas critique */ }
     }
 
-    confirm();
-  </script>
-</body>
-</html>
+    const btnDiv = document.createElement('div');
+    btnDiv.style = 'display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;';
+    btnDiv.innerHTML = `
+      <a href="my-reservations.html" class="btn btn-gold">Ma liste →</a>
+      <a href="index.html" class="btn btn-outline">Retour</a>
+    `;
+    pc.appendChild(btnDiv);
+  } catch(err) {
+    pc.innerHTML = `<div class="alert">${err.message}</div><div style="margin-top:16px;"><a href="my-reservations.html" class="btn btn-outline">Voir mes réservations</a></div>`;
+  }
+}
+
+confirm();
+</script>
+</body></html>

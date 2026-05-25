@@ -1,65 +1,139 @@
 <!doctype html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mes places — Nocturna</title>
+<html lang="fr"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ma liste — Liste Party</title>
   <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-  <div id="nav"></div>
-
-  <section class="container" style="padding: 60px 0;">
-    <div class="section-head">
-      <div>
-        <div class="section-eyebrow mono">Espace personnel</div>
-        <h2 class="section-title">Mes <em class="serif-italic text-blood">réservations</em></h2>
-      </div>
+</head><body>
+<div id="nav"></div>
+<section class="container" style="padding:56px 0;">
+  <div class="section-head">
+    <div>
+      <div class="section-eyebrow mono">Espace perso</div>
+      <h2 class="section-title">Ma <span class="gold">liste</span></h2>
     </div>
+  </div>
+  <div id="resaList"><div class="empty-state">Chargement...</div></div>
 
-    <div id="resList" class="empty">Chargement…</div>
-  </section>
+  <!-- Modal QR -->
+  <div id="qrModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;">
+    <div style="max-width:420px;width:100%;position:relative;">
+      <button id="closeQr" style="position:absolute;top:-40px;right:0;background:none;border:none;color:var(--bone);font-size:1.5rem;cursor:pointer;">✕</button>
+      <div id="qrContent"></div>
+    </div>
+  </div>
+</section>
 
-  <script src="js/config.js"></script>
-  <script src="js/api.js"></script>
-  <script>
-    renderNav('me');
-    if (!requireAuth()) {} // redirige si non connecté
+<footer class="footer"><div class="container footer-inner"><div><div class="footer-brand">Liste <span>Party</span></div></div></div></footer>
 
-    async function load() {
-      const container = document.getElementById('resList');
-      try {
-        const list = await apiFetch('/reservations/me');
-        if (!list.length) {
-          container.innerHTML = '<div class="empty">Vous n\'avez pas encore réservé.</div>';
-          return;
-        }
-        container.classList.remove('empty');
-        container.innerHTML = list.map(r => {
-          const statusColor = r.status === 'paid' ? 'var(--acid)' : (r.status === 'pending' ? 'var(--bone-mute)' : 'var(--blood)');
-          const statusLabel = r.status === 'paid' ? 'Confirmée' : (r.status === 'pending' ? 'En attente de paiement' : 'Annulée');
-          return `
-            <div style="border:1px solid var(--ink-line);background:var(--ink-soft);padding:24px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;">
-              <div style="flex:1;min-width:240px;">
-                <div class="mono text-mute mb-1">${formatDate(r.event_date)}</div>
-                <h3 style="font-family:'Fraunces',serif;font-size:1.5rem;margin-bottom:6px;">${r.event_title}</h3>
-                <div class="text-mute">${r.formula_name} · ${r.quantity} place${r.quantity > 1 ? 's' : ''}</div>
-              </div>
-              <div style="text-align:right;">
-                <div class="mono" style="color:${statusColor};margin-bottom:6px;">${statusLabel}</div>
-                <div style="font-family:'Fraunces',serif;font-size:1.4rem;color:var(--blood);">
-                  ${r.amount_paid_cents ? formatPrice(r.amount_paid_cents) : ''}
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
-      } catch (err) {
-        container.innerHTML = `<div class="empty">Erreur : ${err.message}</div>`;
-      }
+<script src="js/config.js"></script><script src="js/api.js"></script>
+<script>
+renderNav('me');
+if (!requireAuth()) {}
+
+const qrModal = document.getElementById('qrModal');
+document.getElementById('closeQr').addEventListener('click', () => { qrModal.style.display = 'none'; });
+qrModal.addEventListener('click', e => { if (e.target===qrModal) qrModal.style.display = 'none'; });
+
+async function openQr(reservationId, isGuest = false, guestId = null) {
+  const content = document.getElementById('qrContent');
+  content.innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
+  qrModal.style.display = 'flex';
+  try {
+    let data;
+    if (isGuest) {
+      data = await apiFetch(`/invitations/guest/${guestId}/qr`);
+    } else {
+      data = await apiFetch(`/reservations/${reservationId}/qr`);
+    }
+    renderQrTicket(content, data, isGuest);
+  } catch(err) {
+    content.innerHTML = `<div class="alert">${err.message}</div>`;
+  }
+}
+
+async function load() {
+  const container = document.getElementById('resaList');
+  try {
+    const [resas, guestResas] = await Promise.all([
+      apiFetch('/reservations/me'),
+      apiFetch('/guests/me'),
+    ]);
+
+    if (!resas.length && !guestResas.length) {
+      container.innerHTML = '<div class="empty-state">Aucune réservation pour le moment. Fonce sur les soirées.</div>';
+      return;
     }
 
-    load();
-  </script>
-</body>
-</html>
+    container.innerHTML = '';
+
+    // Réservations propres
+    if (resas.length) {
+      container.innerHTML += `<h3 style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--white);margin-bottom:16px;">Mes réservations</h3>`;
+      resas.forEach(r => {
+        const statusLabel = r.status === 'paid' ? 'CONFIRMÉ' : r.status === 'pending' ? 'EN ATTENTE' : 'ANNULÉ';
+        const hasInvite = r.status === 'paid' && r.invite_token && r.formula_max_guests > 0;
+        const inviteUrl = hasInvite ? `${location.origin}${location.pathname.replace('my-reservations.html','invite.html')}?token=${r.invite_token}` : '';
+
+        const card = document.createElement('div');
+        card.className = `resa-card ${r.status}`;
+        card.innerHTML = `
+          <div class="resa-info">
+            <div class="mono text-smoke" style="margin-bottom:5px;">${formatDate(r.event_date)}</div>
+            <div class="resa-event-name">${r.event_title}</div>
+            <div class="resa-formula">✦ ${r.formula_name} · ${r.quantity} place${r.quantity>1?'s':''}</div>
+          </div>
+          <div class="resa-right">
+            <div class="resa-status ${r.status}">${statusLabel}</div>
+            ${r.amount_paid_cents ? `<div class="resa-price">${formatPrice(r.amount_paid_cents)}</div>` : ''}
+          </div>
+          ${r.status === 'paid' ? `<div style="width:100%;display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-outline" onclick="openQr(${r.id})">🎟 Mon QR code</button>
+            ${hasInvite ? `<div class="invite-banner" style="width:100%;">
+              <div class="invite-title">✦ Tu peux inviter des gens</div>
+              <div class="invite-desc">Ta formule inclut ${r.formula_max_guests} invité${r.formula_max_guests>1?'s':''}. Partage ce lien.</div>
+              <div class="invite-link-box">
+                <span class="invite-link-text">${inviteUrl}</span>
+                <button class="copy-btn" onclick="navigator.clipboard.writeText('${inviteUrl}').then(()=>{this.textContent='COPIÉ ✓';setTimeout(()=>{this.textContent='COPIER'},1800)})">COPIER</button>
+              </div>
+            </div>` : ''}
+          </div>` : ''}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Invitations reçues
+    if (guestResas.length) {
+      const sep = document.createElement('div');
+      sep.style = 'margin-top:36px;';
+      sep.innerHTML = `<h3 style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--white);margin-bottom:16px;">Mes <span style="color:var(--lime);">invitations</span></h3>`;
+      container.appendChild(sep);
+
+      guestResas.forEach(g => {
+        const card = document.createElement('div');
+        card.className = 'resa-card paid';
+        card.innerHTML = `
+          <div class="resa-info">
+            <div class="mono text-smoke" style="margin-bottom:5px;">${formatDate(g.event_date)}</div>
+            <div class="resa-event-name">${g.event_title}</div>
+            <div class="resa-formula" style="color:var(--lime);">Invité(e) par ${g.host_first_name} ${g.host_last_name}</div>
+          </div>
+          <div class="resa-right">
+            <div class="resa-status paid">INVITÉ(E)</div>
+          </div>
+          <div style="width:100%;">
+            <button class="btn btn-outline" onclick="openQr(null, true, ${g.id})">🎟 Mon QR invité</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+  } catch(err) {
+    container.innerHTML = `<div class="empty-state">Erreur : ${err.message}</div>`;
+  }
+}
+
+load();
+</script>
+</body></html>

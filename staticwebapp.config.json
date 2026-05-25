@@ -1,14 +1,10 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/*.{css,js,png,jpg,jpeg,webp,svg,ico,avif}"]
+    "exclude": ["/*.{css,js,png,jpg,jpeg,webp,svg,ico,avif,json}"]
   },
   "responseOverrides": {
     "404": { "rewrite": "/index.html" }
-  },
-  "mimeTypes": {
-    ".json": "application/json",
-    ".html": "text/html"
   },
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",

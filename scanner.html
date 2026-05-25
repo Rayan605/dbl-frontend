@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="fr"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scanner — Liste Party</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* Interface scanner plein écran optimisée mobile */
+    body { background: var(--void); }
+
+    .scanner-wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .scanner-header {
+      padding: 20px 24px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .scanner-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .scanner-mode {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--lime);
+      background: rgba(181,255,71,0.1);
+      border: 1px solid var(--lime);
+      padding: 4px 10px;
+      border-radius: 2px;
+    }
+
+    .scanner-body {
+      flex: 1;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 560px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Input manuel */
+    .scan-input-wrap {
+      display: flex;
+      gap: 10px;
+    }
+
+    .scan-input {
+      flex: 1;
+      background: var(--panel);
+      border: 1px solid var(--ghost);
+      color: var(--bone);
+      padding: 16px 18px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.9rem;
+      border-radius: var(--r);
+      transition: border-color 0.2s;
+    }
+    .scan-input:focus { outline: none; border-color: var(--gold); }
+    .scan-input::placeholder { color: var(--ghost); }
+
+    /* Résultat */
+    .result-card {
+      border-radius: var(--r);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      display: none;
+    }
+
+    .result-card.show { display: block; }
+
+    .result-header {
+      padding: 22px 24px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .result-icon {
+      width: 50px; height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      flex-shrink: 0;
+    }
+
+    .result-card.valid   .result-header { background: rgba(181,255,71,0.08); border-bottom: 1px solid rgba(181,255,71,0.2); }
+    .result-card.invalid .result-header { background: rgba(255,59,59,0.08); border-bottom: 1px solid rgba(255,59,59,0.2); }
+    .result-card.warn    .result-header { background: rgba(201,168,76,0.08); border-bottom: 1px solid rgba(201,168,76,0.2); }
+
+    .result-card.valid   .result-icon { background: rgba(181,255,71,0.15); color: var(--lime); }
+    .result-card.invalid .result-icon { background: rgba(255,59,59,0.15); color: var(--red); }
+    .result-card.warn    .result-icon { background: rgba(201,168,76,0.15); color: var(--gold); }
+
+    .result-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+
+    .result-msg {
+      font-size: 0.88rem;
+    }
+    .result-card.valid   .result-msg { color: var(--lime); }
+    .result-card.invalid .result-msg { color: var(--red); }
+    .result-card.warn    .result-msg { color: var(--gold); }
+
+    .result-body {
+      padding: 20px 24px;
+      background: var(--panel);
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.9rem;
+      gap: 12px;
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-row-label { color: var(--smoke); flex-shrink: 0; }
+    .result-row-val { color: var(--white); font-weight: 600; text-align: right; }
+
+    /* Badge type */
+    .type-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.62rem;
+      padding: 3px 8px;
+      border-radius: 2px;
+      text-transform: uppercase;
+    }
+    .type-badge.reservation { background: rgba(201,168,76,0.15); color: var(--gold); border: 1px solid var(--gold); }
+    .type-badge.guest { background: rgba(181,255,71,0.1); color: var(--lime); border: 1px solid var(--lime); }
+
+    /* Derniers scans */
+    .history {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    .history-header {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.85rem;
+    }
+    .history-item:last-child { border-bottom: none; }
+
+    .history-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .history-dot.ok  { background: var(--lime); }
+    .history-dot.bad { background: var(--red); }
+
+    .history-name { color: var(--white); font-weight: 600; flex: 1; }
+    .history-time { color: var(--smoke); font-family: 'Space Mono', monospace; font-size: 0.65rem; flex-shrink: 0; }
+
+    /* Animation flash */
+    @keyframes flashGreen { 0%,100%{background:transparent} 20%{background:rgba(181,255,71,0.12)} }
+    @keyframes flashRed   { 0%,100%{background:transparent} 20%{background:rgba(255,59,59,0.12)} }
+    .flash-ok  { animation: flashGreen 0.8s ease; }
+    .flash-bad { animation: flashRed 0.8s ease; }
+  </style>
+</head>
+<body>
+<div class="scanner-wrap">
+  <div class="scanner-header">
+    <div class="scanner-brand">
+      <span class="brand-dot"></span>
+      Liste Party
+    </div>
+    <span class="scanner-mode">Mode scanner</span>
+  </div>
+
+  <div id="accessDenied" style="display:none;padding:48px 24px;text-align:center;">
+    <div class="empty-state">Accès refusé. Ce compte n'a pas les droits scanner.</div>
+    <a href="index.html" class="btn btn-outline" style="margin-top:16px;">Retour</a>
+  </div>
+
+  <div class="scanner-body" id="scannerBody" style="display:none;">
+
+    <!-- Input QR manuel / caméra -->
+    <div>
+      <div class="mono text-smoke mb-2">Scanner un code QR</div>
+
+      <!-- Caméra -->
+      <div id="cameraWrap" style="position:relative;margin-bottom:12px;display:none;">
+        <video id="video" style="width:100%;border-radius:var(--r);background:#000;" autoplay muted playsinline></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;">
+          <div style="width:200px;height:200px;border:2px solid var(--lime);border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <button id="camBtn" class="btn btn-ghost" style="flex:1;">📷 Activer caméra</button>
+        <button id="stopCamBtn" class="btn btn-ghost" style="flex:1;display:none;">⏹ Stopper</button>
+      </div>
+
+      <!-- Saisie manuelle (fallback ou debug) -->
+      <div class="scan-input-wrap">
+        <input type="text" id="manualInput" class="scan-input" placeholder="Coller le token QR ici..." autocomplete="off" autocorrect="off" spellcheck="false">
+        <button id="manualBtn" class="btn btn-gold">→</button>
+      </div>
+      <p class="mono text-smoke mt-2" style="font-size:0.65rem;">Entre le token manuellement si la caméra ne fonctionne pas.</p>
+    </div>
+
+    <!-- Résultat -->
+    <div class="result-card" id="resultCard">
+      <div class="result-header">
+        <div class="result-icon" id="resultIcon">?</div>
+        <div>
+          <div class="result-title" id="resultTitle">—</div>
+          <div class="result-msg" id="resultMsg">—</div>
+        </div>
+      </div>
+      <div class="result-body">
+        <div class="result-row">
+          <span class="result-row-label">Participant</span>
+          <span class="result-row-val" id="rHolder">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-row-label">Soirée</span>
+          <span class="result-row-val" id="rEvent">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-row-label">Formule / Statut</span>
+          <span class="result-row-val" id="rFormula">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-row-label">Type</span>
+          <span class="result-row-val" id="rType">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historique des scans de la session -->
+    <div class="history">
+      <div class="history-header">
+        <span class="mono text-smoke">Scans de la session</span>
+        <span class="mono text-smoke" id="scanCount">0</span>
+      </div>
+      <div id="historyList">
+        <div style="padding:18px;text-align:center;color:var(--smoke);font-size:0.88rem;font-style:italic;">Aucun scan pour l'instant.</div>
+      </div>
+    </div>
+
+  </div><!-- /scanner-body -->
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+// ─── Auth check ─────────────────────────────────────────
+if (!auth.isLoggedIn()) { window.location.href = 'login.html?next=scanner.html'; }
+
+const user = auth.user;
+if (!user || (!user.is_scanner && !user.is_admin)) {
+  document.getElementById('accessDenied').style.display = '';
+} else {
+  document.getElementById('scannerBody').style.display = '';
+}
+
+// ─── State ──────────────────────────────────────────────
+let scanHistory = [];
+let scanning    = false;
+let videoStream = null;
+let lastToken   = null;  // évite les doublons rapides
+
+// ─── UI helpers ─────────────────────────────────────────
+function showResult(data) {
+  const card = document.getElementById('resultCard');
+  card.classList.remove('show', 'valid', 'invalid', 'warn');
+
+  const icon  = document.getElementById('resultIcon');
+  const title = document.getElementById('resultTitle');
+  const msg   = document.getElementById('resultMsg');
+
+  document.getElementById('rHolder').textContent  = data.holder_name  || '—';
+  document.getElementById('rEvent').textContent   = data.event_title  || '—';
+  document.getElementById('rFormula').textContent = data.formula_name || '—';
+  document.getElementById('rType').innerHTML = data.type
+    ? `<span class="type-badge ${data.type}">${data.type === 'guest' ? 'Invité(e)' : 'Réservation'}</span>`
+    : '—';
+
+  if (data.valid) {
+    card.classList.add('valid');
+    icon.textContent  = '✓';
+    title.textContent = data.holder_name || 'Validé';
+    msg.textContent   = data.message;
+    document.body.classList.add('flash-ok');
+    setTimeout(() => document.body.classList.remove('flash-ok'), 800);
+  } else if (data.already_scanned) {
+    card.classList.add('warn');
+    icon.textContent  = '⚠';
+    title.textContent = 'Déjà scanné';
+    msg.textContent   = data.message;
+  } else {
+    card.classList.add('invalid');
+    icon.textContent  = '✕';
+    title.textContent = data.holder_name || 'Refusé';
+    msg.textContent   = data.message;
+    document.body.classList.add('flash-bad');
+    setTimeout(() => document.body.classList.remove('flash-bad'), 800);
+  }
+
+  card.classList.add('show');
+  addHistory(data);
+}
+
+function addHistory(data) {
+  const now = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  scanHistory.unshift({ data, time: now });
+  if (scanHistory.length > 20) scanHistory.pop();
+
+  document.getElementById('scanCount').textContent = scanHistory.length;
+  document.getElementById('historyList').innerHTML = scanHistory.map(h => `
+    <div class="history-item">
+      <div class="history-dot ${h.data.valid ? 'ok' : 'bad'}"></div>
+      <div class="history-name">${h.data.holder_name || 'Inconnu'}</div>
+      <div style="flex:1;color:var(--smoke);font-size:0.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.data.formula_name || h.data.message || ''}</div>
+      <div class="history-time">${h.time}</div>
+    </div>
+  `).join('');
+}
+
+// ─── Scan function ───────────────────────────────────────
+async function doScan(token) {
+  token = token.trim();
+  if (!token) return;
+
+  // Extraire le token si c'est un payload complet LP|RES|id|TOKEN|...
+  const parts = token.split('|');
+  if (parts.length >= 4 && (parts[0] === 'LP')) {
+    token = parts[3]; // le token est le 4e champ
+  }
+
+  if (token === lastToken) return; // évite double scan caméra
+  lastToken = token;
+  setTimeout(() => { lastToken = null; }, 2000);
+
+  try {
+    const result = await apiFetch(`/scan/${encodeURIComponent(token)}`);
+    showResult(result);
+  } catch(err) {
+    showResult({
+      valid: false, type: 'unknown',
+      message: err.message,
+      holder_name: null, event_title: null, formula_name: null,
+    });
+  }
+
+  // Reset input
+  document.getElementById('manualInput').value = '';
+}
+
+// ─── Manuel ─────────────────────────────────────────────
+document.getElementById('manualBtn').addEventListener('click', () => {
+  doScan(document.getElementById('manualInput').value);
+});
+document.getElementById('manualInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doScan(document.getElementById('manualInput').value);
+});
+
+// ─── Caméra (jsQR) ──────────────────────────────────────
+const video  = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx    = canvas.getContext('2d');
+
+document.getElementById('camBtn').addEventListener('click', async () => {
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    video.srcObject = videoStream;
+    document.getElementById('cameraWrap').style.display = '';
+    document.getElementById('camBtn').style.display     = 'none';
+    document.getElementById('stopCamBtn').style.display = '';
+    scanning = true;
+    requestAnimationFrame(tick);
+  } catch(err) {
+    alert('Caméra non disponible : ' + err.message);
+  }
+});
+
+document.getElementById('stopCamBtn').addEventListener('click', stopCam);
+
+function stopCam() {
+  scanning = false;
+  if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+  video.srcObject = null;
+  document.getElementById('cameraWrap').style.display = 'none';
+  document.getElementById('camBtn').style.display     = '';
+  document.getElementById('stopCamBtn').style.display = 'none';
+}
+
+function tick() {
+  if (!scanning) return;
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+    if (code && code.data) {
+      doScan(code.data);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+// Nettoyage si on quitte la page
+window.addEventListener('beforeunload', stopCam);
+</script>
+</body></html>
