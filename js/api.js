@@ -1,7 +1,7 @@
 // ============================================================
 // LISTE PARTY — API client + helpers
 // ============================================================
-const API = window.API_BASE || 'https://listeparty-enfgcwd7aedpd8h3.francecentral-01.azurewebsites.net/';
+const API = window.API_BASE || 'http://localhost:8000';
 const TOKEN_KEY = 'lp_token';
 const USER_KEY  = 'lp_user';
 

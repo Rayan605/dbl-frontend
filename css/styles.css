@@ -241,7 +241,7 @@ h1, h2, h3, h4 {
 .event-card:hover { transform: translateY(-3px); border-color: var(--ghost); box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
 .event-card:hover::before { opacity: 1; }
 
-.event-card-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: var(--deep); }
+.event-card-img { width: 100%; height: auto; display: block; background: var(--deep); }
 .event-card-placeholder {
   width: 100%; aspect-ratio: 16/9;
   background: linear-gradient(135deg, var(--deep), var(--panel));
