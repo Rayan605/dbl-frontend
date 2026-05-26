@@ -3,7 +3,140 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Admin — Liste Party</title>
   <link rel="stylesheet" href="css/styles.css">
-</head><body>
+  <style>
+    /* ── Formule cards ─────────────────────────────────────── */
+    .f-card {
+      background: var(--deep);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+    .f-card:hover { border-color: var(--ghost); }
+    .f-card.editing { border-color: var(--gold); }
+
+    .f-card-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 20px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .f-card-pos {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--smoke);
+      width: 22px;
+      flex-shrink: 0;
+    }
+
+    .f-card-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      color: var(--white);
+      flex: 1;
+    }
+
+    .f-card-price {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .f-card-guests {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--lime);
+      flex-shrink: 0;
+    }
+
+    .f-card-chevron {
+      color: var(--ghost);
+      font-size: 0.8rem;
+      transition: transform .2s;
+      flex-shrink: 0;
+    }
+    .f-card.open .f-card-chevron { transform: rotate(90deg); }
+
+    .f-card-body {
+      display: none;
+      padding: 0 20px 20px;
+      border-top: 1px solid var(--line);
+    }
+    .f-card.open .f-card-body { display: block; }
+
+    .f-body-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+    @media (max-width: 600px) { .f-body-grid { grid-template-columns: 1fr; } }
+
+    .f-desc-field { grid-column: 1 / -1; }
+
+    .f-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* Prix affiché en €  */
+    .price-hint {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--gold);
+      margin-top: 4px;
+    }
+
+    /* ── Bouton Ajouter ────────────────────────────────────── */
+    .add-formula-btn {
+      width: 100%;
+      padding: 16px;
+      background: transparent;
+      border: 1px dashed var(--ghost);
+      border-radius: 6px;
+      color: var(--smoke);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: border-color .2s, color .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .add-formula-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* ── Nouvelle formule (form inline) ────────────────────── */
+    .new-formula-form {
+      background: var(--deep);
+      border: 1px solid var(--gold);
+      border-radius: 6px;
+      padding: 20px;
+      margin-top: 10px;
+    }
+    .new-formula-form h4 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      color: var(--white);
+      margin-bottom: 14px;
+    }
+
+    /* ── Save feedback ─────────────────────────────────────── */
+    @keyframes savedFlash {
+      0%   { background: rgba(181,255,71,.15); }
+      100% { background: transparent; }
+    }
+    .saved-flash { animation: savedFlash 1s ease; }
+  </style>
+</head>
+<body>
 <div id="nav"></div>
 <section class="container" style="padding:56px 0;">
 
@@ -14,30 +147,30 @@
     </div>
   </div>
 
-  <!-- CRÉER SOIRÉE -->
-  <div style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
+  <!-- ── CRÉER SOIRÉE ───────────────────────────────────── -->
+  <div class="admin-block" style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
     <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:18px;">Créer une <span class="text-gold">soirée</span></h3>
     <div id="createAlert"></div>
     <form id="createForm" class="form">
-      <div class="field"><label>Titre</label><input type="text" id="title" required></div>
+      <div class="field"><label>Titre</label><input type="text" id="ev-title" required></div>
       <div class="form-row">
-        <div class="field"><label>Date & heure</label><input type="datetime-local" id="date" required></div>
-        <div class="field"><label>Places max</label><input type="number" id="max_people" min="1" required></div>
+        <div class="field"><label>Date & heure</label><input type="datetime-local" id="ev-date" required></div>
+        <div class="field"><label>Places max</label><input type="number" id="ev-max" min="1" required></div>
       </div>
       <div class="form-row">
-        <div class="field"><label>Ville</label><input type="text" id="city" required></div>
-        <div class="field"><label>Département</label><input type="text" id="department" required placeholder="ex: 75"></div>
+        <div class="field"><label>Ville</label><input type="text" id="ev-city" required></div>
+        <div class="field"><label>Département</label><input type="text" id="ev-dept" required placeholder="ex: 75"></div>
       </div>
-      <div class="field"><label>Description (ton parlé urbain, qu'est-ce qui se passe ce soir)</label><textarea id="description" placeholder="Ce soir on sort les grands bacs..."></textarea></div>
-      <div class="field"><label>Images promo (jpg, png, webp · 8 Mo max)</label><input type="file" id="images" multiple accept="image/*"></div>
+      <div class="field"><label>Description</label><textarea id="ev-desc" placeholder="Ce soir on sort les grands bacs..."></textarea></div>
+      <div class="field"><label>Images promo (jpg, png, webp · 8 Mo max)</label><input type="file" id="ev-images" multiple accept="image/*"></div>
       <button type="submit" class="btn btn-gold" id="createBtn">Publier la soirée</button>
     </form>
   </div>
 
-  <!-- RECAP PHOTOS -->
-  <div style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
+  <!-- ── RECAP PHOTOS ───────────────────────────────────── -->
+  <div class="admin-block" style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
     <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:6px;">Photos <span class="text-lime">souvenir</span></h3>
-    <p class="text-smoke mb-4" style="font-size:0.9rem;">Ajoute des photos d'une soirée passée. Elle sera automatiquement marquée comme "soirée passée".</p>
+    <p class="text-smoke mb-4" style="font-size:0.9rem;">Ajoute les photos d'une soirée passée. Elle sera automatiquement marquée comme terminée.</p>
     <div class="form-row" style="margin-bottom:14px;">
       <div class="field"><label>Soirée</label><select id="recapEventId"><option value="">Choisir...</option></select></div>
       <div class="field"><label>Photos (plusieurs OK)</label><input type="file" id="recapImages" multiple accept="image/*"></div>
@@ -46,22 +179,39 @@
     <button class="btn btn-ghost" id="recapBtn">Ajouter les photos</button>
   </div>
 
-  <!-- FORMULES -->
-  <div style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
-    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:6px;">Les <span class="text-gold">formules</span></h3>
-    <p class="text-smoke mb-4" style="font-size:0.88rem;">Prix en centimes (15€ = 1500). Invitations : nombre max d'invités pour cette formule (0 = pas d'invitations).</p>
-    <div id="formulasAdmin"></div>
+  <!-- ── FORMULES ───────────────────────────────────────── -->
+  <div class="admin-block" id="formulasBlock" style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:12px;">
+      <div>
+        <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);">Les <span class="text-gold">formules</span></h3>
+        <p class="text-smoke" style="font-size:0.82rem;margin-top:4px;">Clique sur une formule pour modifier. Le prix est en centimes (100€ = 10000). Les invités = nombre max d'invités par réservation.</p>
+      </div>
+      <span class="mono text-smoke" id="formulaCount"></span>
+    </div>
+    <div id="formulasAdmin" style="display:grid;gap:8px;margin-top:16px;"></div>
+    <div id="newFormulaWrap"></div>
+    <div id="formulasAlert" style="margin-top:8px;"></div>
   </div>
 
-  <!-- LISTE DES SOIRÉES -->
-  <div style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;">
+  <!-- ── UTILISATEURS & SCANNERS ────────────────────────── -->
+  <div class="admin-block" style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:6px;">Utilisateurs & <span class="text-lime">Scanners</span></h3>
+    <p class="text-smoke mb-4" style="font-size:0.88rem;">Active le mode scanner pour les personnes qui vérifient les QR à l'entrée.</p>
+    <input type="text" id="userSearch" placeholder="Rechercher par nom ou email..."
+      style="background:var(--deep);border:1px solid var(--line);border-radius:4px;padding:10px 16px;color:var(--bone);font-family:inherit;font-size:0.9rem;width:100%;margin-bottom:14px;">
+    <div id="usersAdmin"></div>
+  </div>
+
+  <!-- ── SOIRÉES ────────────────────────────────────────── -->
+  <div class="admin-block" style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;">
     <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:16px;">Soirées publiées</h3>
     <div id="eventsAdmin"></div>
   </div>
 
 </section>
 
-<script src="js/config.js"></script><script src="js/api.js"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
 <script>
 renderNav('admin');
 if (!requireAuth()) {}
@@ -69,7 +219,15 @@ if (!auth.isAdmin()) {
   document.body.innerHTML = '<div class="container"><div class="empty-state">Zone réservée aux admins.</div></div>';
 }
 
-// CRÉER SOIRÉE
+// ── Helpers ─────────────────────────────────────────────
+function euros(cents) {
+  return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:0}).format((cents||0)/100);
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── CRÉER SOIRÉE ─────────────────────────────────────────
 document.getElementById('createForm').addEventListener('submit', async e => {
   e.preventDefault();
   const alertBox = document.getElementById('createAlert');
@@ -77,15 +235,15 @@ document.getElementById('createForm').addEventListener('submit', async e => {
   const btn = document.getElementById('createBtn');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Publication...';
   const fd = new FormData();
-  fd.append('title', document.getElementById('title').value);
-  fd.append('description', document.getElementById('description').value);
-  fd.append('date', new Date(document.getElementById('date').value).toISOString());
-  fd.append('city', document.getElementById('city').value);
-  fd.append('department', document.getElementById('department').value);
-  fd.append('max_people', document.getElementById('max_people').value);
-  for (const f of document.getElementById('images').files) fd.append('images', f);
+  fd.append('title',      document.getElementById('ev-title').value);
+  fd.append('description',document.getElementById('ev-desc').value);
+  fd.append('date',       new Date(document.getElementById('ev-date').value).toISOString());
+  fd.append('city',       document.getElementById('ev-city').value);
+  fd.append('department', document.getElementById('ev-dept').value);
+  fd.append('max_people', document.getElementById('ev-max').value);
+  for (const f of document.getElementById('ev-images').files) fd.append('images', f);
   try {
-    await apiFetch('/events', { method: 'POST', body: fd });
+    await apiFetch('/events', { method:'POST', body:fd });
     showAlert(alertBox, 'Soirée publiée, les gars vont kiffer.', 'success');
     document.getElementById('createForm').reset();
     loadEvents();
@@ -93,74 +251,289 @@ document.getElementById('createForm').addEventListener('submit', async e => {
   finally { btn.disabled=false; btn.textContent='Publier la soirée'; }
 });
 
-// RECAP PHOTOS
+// ── RECAP PHOTOS ─────────────────────────────────────────
 document.getElementById('recapBtn').addEventListener('click', async () => {
   const alertBox = document.getElementById('recapAlert');
   clearAlert(alertBox);
   const evId = document.getElementById('recapEventId').value;
   const files = document.getElementById('recapImages').files;
-  if (!evId) { showAlert(alertBox, 'Choisis une soirée.'); return; }
-  if (!files.length) { showAlert(alertBox, 'Ajoute au moins une photo.'); return; }
+  if (!evId)       { showAlert(alertBox, 'Choisis une soirée.'); return; }
+  if (!files.length){ showAlert(alertBox, 'Ajoute au moins une photo.'); return; }
   const btn = document.getElementById('recapBtn');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Upload...';
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Upload...';
   const fd = new FormData();
   for (const f of files) fd.append('images', f);
   try {
-    await apiFetch(`/events/${evId}/recap-images`, { method: 'POST', body: fd });
+    await apiFetch(`/events/${evId}/recap-images`, { method:'POST', body:fd });
     showAlert(alertBox, 'Photos ajoutées, la mémoire est là.', 'success');
-    document.getElementById('recapImages').value = '';
+    document.getElementById('recapImages').value='';
     loadEvents();
   } catch(err) { showAlert(alertBox, err.message); }
   finally { btn.disabled=false; btn.textContent='Ajouter les photos'; }
 });
 
-// FORMULES
-async function loadFormulas() {
-  const container = document.getElementById('formulasAdmin');
-  try {
-    const formulas = await apiFetch('/formulas');
-    container.innerHTML = formulas.map(f => `
-      <div style="display:grid;grid-template-columns:40px 1fr 1.5fr 110px 110px auto;gap:10px;align-items:end;padding:12px 0;border-top:1px solid var(--line);" data-id="${f.id}">
-        <div class="mono text-smoke" style="padding-bottom:14px;">#${f.id}</div>
-        <div class="field"><label>Nom</label><input type="text" class="f-name" value="${f.name.replace(/"/g,'&quot;')}"></div>
-        <div class="field"><label>Description</label><input type="text" class="f-desc" value="${(f.description||'').replace(/"/g,'&quot;')}"></div>
-        <div class="field"><label>Prix (cts)</label><input type="number" class="f-price" value="${f.price_cents}" min="0"></div>
-        <div class="field"><label>Invités max</label><input type="number" class="f-guests" value="${f.max_guests||0}" min="0"></div>
-        <button class="btn btn-ghost f-save" style="padding:13px 14px;font-size:0.8rem;">Save</button>
-      </div>
-    `).join('');
+// ══════════════════════════════════════════════════════════
+//  FORMULES
+// ══════════════════════════════════════════════════════════
+let formulas = [];
 
-    container.querySelectorAll('.f-save').forEach(btn => {
-      btn.addEventListener('click', async e => {
-        const row = e.target.closest('[data-id]');
-        const id = row.dataset.id;
-        btn.disabled=true; btn.textContent='...';
-        try {
-          await apiFetch(`/formulas/${id}`, { method:'PATCH', body:{
-            name: row.querySelector('.f-name').value,
-            description: row.querySelector('.f-desc').value,
-            price_cents: +row.querySelector('.f-price').value,
-            max_guests: +row.querySelector('.f-guests').value,
-          }});
-          btn.textContent='✓'; setTimeout(()=>{btn.textContent='Save';btn.disabled=false;},1200);
-        } catch(err) { alert(err.message); btn.textContent='Save'; btn.disabled=false; }
-      });
-    });
-  } catch(err) { container.innerHTML = `<div class="text-smoke">${err.message}</div>`; }
+async function loadFormulas() {
+  try {
+    formulas = await apiFetch('/formulas');
+    renderFormulas();
+  } catch(err) {
+    document.getElementById('formulasAdmin').innerHTML = `<div class="text-smoke">${err.message}</div>`;
+  }
 }
 
-// LISTE SOIRÉES
+function renderFormulas() {
+  const container = document.getElementById('formulasAdmin');
+  document.getElementById('formulaCount').textContent = `${formulas.length} formule${formulas.length > 1 ? 's' : ''}`;
+
+  container.innerHTML = formulas.map(f => `
+    <div class="f-card" id="fcard-${f.id}">
+      <div class="f-card-head" onclick="toggleCard(${f.id})">
+        <span class="f-card-pos">#${f.id}</span>
+        <span class="f-card-name">${esc(f.name)}</span>
+        ${f.max_guests > 0
+          ? `<span class="f-card-guests">+${f.max_guests} invité${f.max_guests>1?'s':''}</span>`
+          : ''}
+        <span class="f-card-price">${euros(f.price_cents)}</span>
+        <span class="f-card-chevron">▶</span>
+      </div>
+      <div class="f-card-body">
+        <div class="f-body-grid">
+          <div class="field">
+            <label>Nom</label>
+            <input type="text" id="f-name-${f.id}" value="${esc(f.name)}" maxlength="120">
+          </div>
+          <div class="field">
+            <label>Prix en centimes</label>
+            <input type="number" id="f-price-${f.id}" value="${f.price_cents}" min="0"
+              oninput="document.getElementById('f-price-hint-${f.id}').textContent=euros(this.value)">
+            <div class="price-hint" id="f-price-hint-${f.id}">${euros(f.price_cents)}</div>
+          </div>
+          <div class="field">
+            <label>Invités max <span style="color:var(--smoke);font-size:0.72rem;">(0 = pas d'invitations)</span></label>
+            <input type="number" id="f-guests-${f.id}" value="${f.max_guests}" min="0" max="99">
+          </div>
+          <div class="field f-desc-field">
+            <label>Description</label>
+            <textarea id="f-desc-${f.id}" style="min-height:80px;">${esc(f.description||'')}</textarea>
+          </div>
+        </div>
+        <div class="f-actions">
+          <button class="btn btn-gold" style="padding:11px 20px;font-size:0.85rem;" onclick="saveFormula(${f.id}, this)">
+            Enregistrer
+          </button>
+          <button class="btn btn-ghost" style="padding:11px 16px;font-size:0.85rem;" onclick="toggleCard(${f.id})">
+            Annuler
+          </button>
+          <button class="btn btn-red" style="padding:11px 16px;font-size:0.85rem;margin-left:auto;" onclick="deleteFormula(${f.id}, this)">
+            Supprimer
+          </button>
+        </div>
+        <div id="f-alert-${f.id}" style="margin-top:8px;"></div>
+      </div>
+    </div>
+  `).join('');
+
+  // Bouton ajouter
+  document.getElementById('newFormulaWrap').innerHTML = '';
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-formula-btn';
+  addBtn.innerHTML = '＋ Ajouter une formule';
+  addBtn.addEventListener('click', showNewFormulaForm);
+  document.getElementById('newFormulaWrap').appendChild(addBtn);
+}
+
+function toggleCard(id) {
+  const card = document.getElementById(`fcard-${id}`);
+  const wasOpen = card.classList.contains('open');
+  // Ferme tous
+  document.querySelectorAll('.f-card').forEach(c => c.classList.remove('open', 'editing'));
+  if (!wasOpen) {
+    card.classList.add('open', 'editing');
+    card.querySelector('.f-card-body').style.display = 'block';
+  }
+}
+
+async function saveFormula(id, btn) {
+  const alertBox = document.getElementById(`f-alert-${id}`);
+  clearAlert(alertBox);
+  const name  = document.getElementById(`f-name-${id}`).value.trim();
+  const price = parseInt(document.getElementById(`f-price-${id}`).value) || 0;
+  const guests= parseInt(document.getElementById(`f-guests-${id}`).value) || 0;
+  const desc  = document.getElementById(`f-desc-${id}`).value.trim();
+
+  if (!name) { showAlert(alertBox, 'Le nom est obligatoire.'); return; }
+
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const updated = await apiFetch(`/formulas/${id}`, { method:'PATCH',
+      body: { name, description: desc || null, price_cents: price, max_guests: guests }
+    });
+    // Mettre à jour le cache
+    const idx = formulas.findIndex(f => f.id === id);
+    if (idx !== -1) formulas[idx] = updated;
+    // Fermer et re-render
+    renderFormulas();
+    // Flash de confirmation sur la card
+    const card = document.getElementById(`fcard-${id}`);
+    if (card) card.classList.add('saved-flash');
+  } catch(err) {
+    showAlert(alertBox, err.message);
+    btn.disabled = false; btn.textContent = 'Enregistrer';
+  }
+}
+
+async function deleteFormula(id, btn) {
+  const f = formulas.find(x => x.id === id);
+  if (!confirm(`Supprimer la formule "${f?.name}" ? Cette action est irréversible.`)) return;
+  const alertBox = document.getElementById(`f-alert-${id}`);
+  clearAlert(alertBox);
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    await apiFetch(`/formulas/${id}`, { method:'DELETE' });
+    formulas = formulas.filter(x => x.id !== id);
+    renderFormulas();
+    showAlert(document.getElementById('formulasAlert'), `Formule supprimée.`, 'success');
+  } catch(err) {
+    showAlert(alertBox, err.message);
+    btn.disabled = false; btn.textContent = 'Supprimer';
+  }
+}
+
+function showNewFormulaForm() {
+  const wrap = document.getElementById('newFormulaWrap');
+  wrap.innerHTML = `
+    <div class="new-formula-form">
+      <h4>✦ Nouvelle formule</h4>
+      <div class="f-body-grid">
+        <div class="field">
+          <label>Nom <span style="color:var(--red);">*</span></label>
+          <input type="text" id="nf-name" placeholder="Nom de la formule" maxlength="120" autofocus>
+        </div>
+        <div class="field">
+          <label>Prix en centimes <span style="color:var(--red);">*</span></label>
+          <input type="number" id="nf-price" min="0" value="0"
+            oninput="document.getElementById('nf-price-hint').textContent=euros(this.value)">
+          <div class="price-hint" id="nf-price-hint">0 €</div>
+        </div>
+        <div class="field">
+          <label>Invités max <span style="color:var(--smoke);font-size:0.72rem;">(0 = aucun)</span></label>
+          <input type="number" id="nf-guests" min="0" max="99" value="0">
+        </div>
+        <div class="field f-desc-field">
+          <label>Description</label>
+          <textarea id="nf-desc" style="min-height:80px;" placeholder="Ce que la formule inclut..."></textarea>
+        </div>
+      </div>
+      <div id="nf-alert"></div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+        <button class="btn btn-gold" id="nf-save">Créer la formule</button>
+        <button class="btn btn-ghost" onclick="renderFormulas()">Annuler</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('nf-save').addEventListener('click', createFormula);
+}
+
+async function createFormula() {
+  const alertBox = document.getElementById('nf-alert');
+  clearAlert(alertBox);
+  const name   = document.getElementById('nf-name').value.trim();
+  const price  = parseInt(document.getElementById('nf-price').value) || 0;
+  const guests = parseInt(document.getElementById('nf-guests').value) || 0;
+  const desc   = document.getElementById('nf-desc').value.trim();
+
+  if (!name) { showAlert(alertBox, 'Le nom est obligatoire.'); return; }
+
+  const btn = document.getElementById('nf-save');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Création...';
+  try {
+    const created = await apiFetch('/formulas', { method:'POST',
+      body: { name, description: desc || null, price_cents: price, max_guests: guests }
+    });
+    formulas.push(created);
+    renderFormulas();
+    showAlert(document.getElementById('formulasAlert'),
+      `Formule "${created.name}" créée (${euros(created.price_cents)}).`, 'success');
+  } catch(err) {
+    showAlert(alertBox, err.message);
+    btn.disabled = false; btn.textContent = 'Créer la formule';
+  }
+}
+
+// ── UTILISATEURS & SCANNERS ───────────────────────────────
+let allUsers = [];
+
+async function loadUsers() {
+  const container = document.getElementById('usersAdmin');
+  try {
+    allUsers = await apiFetch('/admin/users');
+    renderUsers(allUsers);
+  } catch(err) {
+    container.innerHTML = `<div class="text-smoke">${err.message}</div>`;
+  }
+}
+
+document.getElementById('userSearch').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  renderUsers(q ? allUsers.filter(u =>
+    `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(q)) : allUsers);
+});
+
+function renderUsers(users) {
+  const container = document.getElementById('usersAdmin');
+  if (!users.length) {
+    container.innerHTML = '<div class="text-smoke" style="padding:12px 0;">Aucun résultat.</div>';
+    return;
+  }
+  container.innerHTML = users.map(u => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--line);gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div style="color:var(--white);font-weight:600;">${esc(u.first_name)} ${esc(u.last_name)}</div>
+        <div style="color:var(--smoke);font-size:0.82rem;">${esc(u.email)} · ${esc(u.social||'—')}</div>
+        <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;">
+          ${u.is_admin   ? '<span class="tag tag-gold">Admin</span>'   : ''}
+          ${u.is_scanner ? '<span class="tag tag-lime">Scanner</span>' : ''}
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:0.85rem;color:${u.is_scanner ? 'var(--lime)' : 'var(--smoke)'};">
+        <input type="checkbox" ${u.is_scanner ? 'checked' : ''} onchange="toggleScanner(${u.id}, this.checked, this)"
+          style="width:16px;height:16px;cursor:pointer;accent-color:var(--lime);">
+        Scanner
+      </label>
+    </div>
+  `).join('');
+}
+
+async function toggleScanner(uid, val, cb) {
+  cb.disabled = true;
+  try {
+    await apiFetch(`/admin/users/${uid}/scanner?is_scanner=${val}`, { method:'PATCH' });
+    const u = allUsers.find(x => x.id === uid);
+    if (u) u.is_scanner = val ? 1 : 0;
+    const q = document.getElementById('userSearch').value.toLowerCase();
+    renderUsers(q ? allUsers.filter(u2 => `${u2.first_name} ${u2.last_name} ${u2.email}`.toLowerCase().includes(q)) : allUsers);
+  } catch(err) { alert(err.message); cb.checked = !val; cb.disabled = false; }
+}
+
+// ── SOIRÉES ───────────────────────────────────────────────
 async function loadEvents() {
   const container = document.getElementById('eventsAdmin');
-  const recapSel = document.getElementById('recapEventId');
+  const recapSel  = document.getElementById('recapEventId');
   try {
-    const events = await apiFetch('/events?upcoming_only=false');
-    const past = await apiFetch('/events/past');
-    const all = [...events, ...past].reduce((acc, e) => { if (!acc.find(x=>x.id===e.id)) acc.push(e); return acc; }, []);
+    const [upcoming, past] = await Promise.all([
+      apiFetch('/events?upcoming_only=false'),
+      apiFetch('/events/past'),
+    ]);
+    const all = [...upcoming, ...past].reduce((acc, e) =>
+      acc.find(x => x.id === e.id) ? acc : [...acc, e], []);
 
-    // Mise à jour du select recap
     recapSel.innerHTML = '<option value="">Choisir...</option>' +
-      all.map(e => `<option value="${e.id}">${e.title} (${new Date(e.date).toLocaleDateString('fr-FR')})</option>`).join('');
+      all.map(e => `<option value="${e.id}">${esc(e.title)} (${new Date(e.date).toLocaleDateString('fr-FR')})</option>`).join('');
 
     if (!all.length) { container.innerHTML = '<div class="text-smoke">Aucune soirée.</div>'; return; }
 
@@ -168,16 +541,16 @@ async function loadEvents() {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:14px 0;border-top:1px solid var(--line);gap:14px;flex-wrap:wrap;">
         <div style="flex:1;min-width:220px;">
           <div class="mono text-smoke">${formatDate(ev.date)} · ${ev.department}</div>
-          <div style="font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--white);">${ev.title}</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--white);">${esc(ev.title)}</div>
           <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
             <span class="tag">${ev.seats_taken}/${ev.max_people} places</span>
-            <span class="tag ${ev.is_past?'tag-red':'tag-gold'}">${ev.is_past?'PASSÉE':'À VENIR'}</span>
+            <span class="tag ${ev.is_past ? 'tag-red' : 'tag-gold'}">${ev.is_past ? 'PASSÉE' : 'À VENIR'}</span>
           </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <a href="event.html?id=${ev.id}" class="btn btn-ghost" style="padding:9px 14px;font-size:0.8rem;">Voir</a>
           <button class="btn btn-ghost toggle-past" data-id="${ev.id}" data-past="${ev.is_past}" style="padding:9px 14px;font-size:0.8rem;">
-            ${ev.is_past?'Remettre à venir':'Marquer passée'}
+            ${ev.is_past ? 'Remettre à venir' : 'Marquer passée'}
           </button>
           <button class="btn btn-red del-btn" data-id="${ev.id}" style="padding:9px 14px;font-size:0.8rem;">Suppr.</button>
         </div>
@@ -193,110 +566,19 @@ async function loadEvents() {
 
     container.querySelectorAll('.toggle-past').forEach(b => {
       b.addEventListener('click', async () => {
-        const isPast = b.dataset.past === 'true' || b.dataset.past === '1';
-        try {
-          await apiFetch(`/events/${b.dataset.id}/mark-past?is_past=${!isPast}`, { method:'PATCH' });
-          loadEvents();
-        } catch(err) { alert(err.message); }
+        const past = b.dataset.past === 'true' || b.dataset.past === '1';
+        try { await apiFetch(`/events/${b.dataset.id}/mark-past?is_past=${!past}`, { method:'PATCH' }); loadEvents(); }
+        catch(err) { alert(err.message); }
       });
     });
-  } catch(err) { container.innerHTML = `<div class="text-smoke">${err.message}</div>`; }
-}
-
-loadFormulas();
-loadEvents();
-</script>
-</body></html>
-<script>
-// Ajout de la section Users — injectée dans le DOM existant
-document.addEventListener('DOMContentLoaded', () => {
-  if (!auth.isAdmin()) return;
-
-  // Injecter une section users après les formules
-  const usersSection = document.createElement('div');
-  usersSection.style = 'background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;';
-  usersSection.innerHTML = `
-    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:6px;">
-      Utilisateurs & <span class="text-lime">Scanners</span>
-    </h3>
-    <p class="text-smoke mb-4" style="font-size:0.88rem;">Active le mode scanner pour les personnes qui scannent les QR à l'entrée.</p>
-    <input type="text" id="userSearch" placeholder="Rechercher par nom ou email..." style="background:var(--deep);border:1px solid var(--line);border-radius:4px;padding:10px 16px;color:var(--bone);font-family:inherit;font-size:0.9rem;width:100%;margin-bottom:14px;">
-    <div id="usersAdmin"></div>
-  `;
-
-  // Insérer avant la liste des soirées (dernier enfant)
-  const container = document.querySelector('section.container');
-  const lastDiv = container.lastElementChild;
-  container.insertBefore(usersSection, lastDiv);
-
-  loadUsers();
-
-  document.getElementById('userSearch').addEventListener('input', e => {
-    filterUsers(e.target.value.toLowerCase());
-  });
-});
-
-let allUsers = [];
-
-async function loadUsers() {
-  const container = document.getElementById('usersAdmin');
-  if (!container) return;
-  try {
-    allUsers = await apiFetch('/admin/users');
-    renderUsers(allUsers);
   } catch(err) {
     container.innerHTML = `<div class="text-smoke">${err.message}</div>`;
   }
 }
 
-function filterUsers(q) {
-  if (!q) { renderUsers(allUsers); return; }
-  renderUsers(allUsers.filter(u =>
-    `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(q)
-  ));
-}
-
-function renderUsers(users) {
-  const container = document.getElementById('usersAdmin');
-  if (!container) return;
-  if (!users.length) { container.innerHTML = '<div class="text-smoke" style="padding:12px 0;">Aucun résultat.</div>'; return; }
-  container.innerHTML = users.map(u => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--line);gap:12px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <div style="color:var(--white);font-weight:600;">${u.first_name} ${u.last_name}</div>
-        <div style="color:var(--smoke);font-size:0.82rem;">${u.email} · ${u.social || '—'}</div>
-        <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;">
-          ${u.is_admin ? '<span class="tag tag-gold">Admin</span>' : ''}
-          ${u.is_scanner ? '<span class="tag tag-lime">Scanner</span>' : ''}
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:0.85rem;color:${u.is_scanner?'var(--lime)':'var(--smoke)'};">
-          <input type="checkbox" ${u.is_scanner ? 'checked' : ''} onchange="toggleScanner(${u.id}, this.checked, this)"
-            style="width:16px;height:16px;cursor:pointer;accent-color:var(--lime);">
-          Scanner
-        </label>
-      </div>
-    </div>
-  `).join('');
-}
-
-async function toggleScanner(uid, val, checkbox) {
-  checkbox.disabled = true;
-  const token = auth.token;
-  try {
-    await apiFetch(`/admin/users/${uid}/scanner?is_scanner=${val}`, { method: 'PATCH' });
-    // Mettre à jour le cache local
-    const u = allUsers.find(x => x.id === uid);
-    if (u) u.is_scanner = val ? 1 : 0;
-    renderUsers(allUsers.filter(x => {
-      const q = document.getElementById('userSearch')?.value.toLowerCase() || '';
-      return !q || `${x.first_name} ${x.last_name} ${x.email}`.toLowerCase().includes(q);
-    }));
-  } catch(err) {
-    alert(err.message);
-    checkbox.checked = !val;
-    checkbox.disabled = false;
-  }
-}
+// ── Boot ──────────────────────────────────────────────────
+loadFormulas();
+loadUsers();
+loadEvents();
 </script>
+</body></html>
