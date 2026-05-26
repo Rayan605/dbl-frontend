@@ -173,7 +173,7 @@
     <p class="text-smoke mb-4" style="font-size:0.9rem;">Ajoute les photos d'une soirée passée. Elle sera automatiquement marquée comme terminée.</p>
     <div class="form-row" style="margin-bottom:14px;">
       <div class="field"><label>Soirée</label><select id="recapEventId"><option value="">Choisir...</option></select></div>
-      <div class="field"><label>Photos (plusieurs OK)</label><input type="file" id="recapImages" multiple accept="image/*"></div>
+      <div class="field"><label>Photos &amp; vidéos (jpg, png, mp4, mov…)</label><input type="file" id="recapImages" multiple accept="image/*,video/mp4,video/mov,video/webm,video/quicktime"></div>
     </div>
     <div id="recapAlert"></div>
     <button class="btn btn-ghost" id="recapBtn">Ajouter les photos</button>
@@ -213,7 +213,8 @@
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script>
-renderNav('admin');
+renderFooter();
+  renderNav('admin');
 if (!requireAuth()) {}
 if (!auth.isAdmin()) {
   document.body.innerHTML = '<div class="container"><div class="empty-state">Zone réservée aux admins.</div></div>';
@@ -581,4 +582,5 @@ loadFormulas();
 loadUsers();
 loadEvents();
 </script>
+<div id="footer"></div>
 </body></html>

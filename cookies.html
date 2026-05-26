@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="fr"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Politique de cookies — Liste Party</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .legal-body { max-width: 780px; margin: 0 auto; }
+    .legal-body h2 { font-size: 1.3rem; color: var(--white); margin: 32px 0 12px; }
+    .legal-body p, .legal-body li { color: var(--smoke); line-height: 1.75; font-size: 0.95rem; margin-bottom: 10px; }
+    .legal-body ul { padding-left: 20px; margin-bottom: 10px; }
+    .legal-updated { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--smoke); margin-bottom: 36px; }
+    .legal-section { border-top: 1px solid var(--line); padding-top: 24px; }
+    .cookie-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.88rem; }
+    .cookie-table th { background: var(--panel); color: var(--bone); padding: 10px 14px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--line); font-family: 'Space Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .cookie-table td { padding: 10px 14px; border-bottom: 1px solid var(--line); color: var(--smoke); vertical-align: top; }
+    .cookie-table tr:last-child td { border-bottom: none; }
+    .cookie-table td:first-child { color: var(--bone); font-weight: 500; white-space: nowrap; }
+    .ct-essential { color: var(--lime) !important; }
+    .ct-third { color: var(--gold) !important; }
+  </style>
+</head><body>
+<div id="nav"></div>
+
+<section class="container" style="padding: 48px 0 60px;">
+  <div class="legal-body">
+    <div class="section-eyebrow mono mb-2">Transparence</div>
+    <h1 style="font-size:clamp(2rem,6vw,3rem);color:var(--white);margin-bottom:10px;">Politique de <span style="color:var(--gold);font-style:italic;">cookies</span></h1>
+    <div class="legal-updated">Dernière mise à jour : janvier 2026</div>
+
+    <div class="legal-section">
+      <h2>Qu'est-ce qu'un cookie ?</h2>
+      <p>Un cookie est un petit fichier texte stocké sur votre appareil lors de la visite d'un site web. Il permet au site de mémoriser vos préférences et actions sur une période donnée.</p>
+      <p>Liste Party utilise exclusivement le stockage local du navigateur (<code style="color:var(--bone);background:var(--panel);padding:2px 6px;border-radius:3px;">localStorage</code>) pour les données de session — aucun cookie tiers de tracking n'est déposé sur votre appareil.</p>
+    </div>
+
+    <div class="legal-section">
+      <h2>Données stockées dans votre navigateur</h2>
+      <p>Voici l'ensemble des données que Liste Party stocke localement :</p>
+      <table class="cookie-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Type</th>
+            <th>Contenu</th>
+            <th>Durée</th>
+            <th>Finalité</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>lp_token</code></td>
+            <td><span class="ct-essential">Essentiel</span></td>
+            <td>Jeton JWT d'authentification</td>
+            <td>7 jours</td>
+            <td>Maintenir votre session de connexion</td>
+          </tr>
+          <tr>
+            <td><code>lp_user</code></td>
+            <td><span class="ct-essential">Essentiel</span></td>
+            <td>Informations basiques du compte (prénom, rôle)</td>
+            <td>7 jours</td>
+            <td>Personnaliser l'interface selon votre compte</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Ces données sont <strong style="color:var(--bone);">strictement nécessaires</strong> au fonctionnement du service et ne nécessitent pas votre consentement au sens du RGPD.</p>
+    </div>
+
+    <div class="legal-section">
+      <h2>Cookies tiers</h2>
+      <h3 style="color:var(--bone);margin:16px 0 8px;">Stripe (paiement)</h3>
+      <p>Lors du processus de paiement, vous êtes redirigé vers la page de paiement sécurisée de Stripe. Stripe dépose ses propres cookies selon sa <a href="https://stripe.com/fr/privacy" target="_blank" rel="noopener" style="color:var(--gold);">politique de confidentialité</a>. Liste Party n'a pas accès à ces cookies.</p>
+      <table class="cookie-table">
+        <thead><tr><th>Émetteur</th><th>Finalité</th><th>Politique</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Stripe</td>
+            <td><span class="ct-third">Paiement sécurisé</span></td>
+            <td><a href="https://stripe.com/fr/privacy" target="_blank" rel="noopener" style="color:var(--gold);">stripe.com/fr/privacy</a></td>
+          </tr>
+        </tbody>
+      </table>
+      <h3 style="color:var(--bone);margin:16px 0 8px;">Google Fonts</h3>
+      <p>Le site charge des polices de caractères via Google Fonts. Cette requête peut transmettre votre adresse IP à Google. Voir la <a href="https://policies.google.com/privacy" target="_blank" rel="noopener" style="color:var(--gold);">politique de confidentialité Google</a>.</p>
+    </div>
+
+    <div class="legal-section">
+      <h2>Cookies absents de ce site</h2>
+      <p>Liste Party <strong style="color:var(--bone);">ne dépose pas</strong> les types de cookies suivants :</p>
+      <ul>
+        <li>Cookies de publicité ou de ciblage comportemental</li>
+        <li>Cookies de réseaux sociaux (Facebook Pixel, etc.)</li>
+        <li>Cookies analytiques tiers (Google Analytics, Hotjar, etc.)</li>
+        <li>Cookies de partage</li>
+      </ul>
+    </div>
+
+    <div class="legal-section">
+      <h2>Gérer vos préférences</h2>
+      <p>Vous pouvez effacer les données de session Liste Party à tout moment :</p>
+      <ul>
+        <li>En vous déconnectant du site (bouton « Déco » dans la navigation)</li>
+        <li>En effaçant le stockage local de votre navigateur dans les paramètres de confidentialité</li>
+        <li>Via les outils de développement de votre navigateur (F12 → Application → Local Storage)</li>
+      </ul>
+      <p>La suppression du token de session entraîne votre déconnexion du site.</p>
+    </div>
+
+    <div class="legal-section">
+      <h2>Contact</h2>
+      <p>Pour toute question relative à notre politique de cookies : <a href="mailto:contact@listeparty.fr" style="color:var(--gold);">contact@listeparty.fr</a></p>
+    </div>
+  </div>
+</section>
+
+<div id="footer"></div>
+<script src="js/config.js"></script><script src="js/api.js"></script>
+<script>renderFooter(); renderNav();</script>
+</body></html>

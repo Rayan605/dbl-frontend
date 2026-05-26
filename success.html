@@ -11,7 +11,8 @@
 
 <script src="js/config.js"></script><script src="js/api.js"></script>
 <script>
-renderNav('me');
+renderFooter();
+  renderNav('me');
 const sessionId = new URLSearchParams(location.search).get('session_id');
 
 async function confirm() {
@@ -57,4 +58,5 @@ async function confirm() {
 
 confirm();
 </script>
+<div id="footer"></div>
 </body></html>

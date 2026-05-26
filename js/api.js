@@ -126,3 +126,44 @@ function renderQrTicket(container, data, isGuest = false) {
       <div class="ticket-footer">Présenter ce QR à l'entrée · Liste Party · DLB</div>
     </div>`;
 }
+
+// ── Footer global ─────────────────────────────────────────
+function renderFooter(elId) {
+  const target = elId ? document.getElementById(elId) : document.getElementById('footer');
+  if (!target) return;
+  const yr = new Date().getFullYear();
+  target.innerHTML = `
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-top">
+          <div class="footer-brand-block">
+            <div class="footer-brand">Liste <span>Party</span></div>
+            <div class="footer-sub">Dans le bon — T'es sur la liste ou t'es pas sur la liste.</div>
+          </div>
+          <nav class="footer-nav">
+            <div class="footer-nav-col">
+              <div class="footer-nav-title">Navigation</div>
+              <a href="index.html">Soirées</a>
+              <a href="past.html">Soirées passées</a>
+              <a href="my-reservations.html">Mes réservations</a>
+              <a href="register.html">Créer un compte</a>
+            </div>
+            <div class="footer-nav-col">
+              <div class="footer-nav-title">Légal</div>
+              <a href="cgu.html">CGU</a>
+              <a href="mentions-legales.html">Mentions légales</a>
+              <a href="confidentialite.html">Confidentialité</a>
+              <a href="cookies.html">Cookies</a>
+            </div>
+          </nav>
+        </div>
+        <div class="footer-bottom">
+          <div>© ${yr} Liste Party — Tous droits réservés</div>
+          <div class="footer-bottom-right">
+            <span class="mono" style="color:var(--smoke);">Paiement sécurisé par</span>
+            <span style="color:var(--gold);font-weight:600;">Stripe</span>
+          </div>
+        </div>
+      </div>
+    </footer>`;
+}

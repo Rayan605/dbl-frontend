@@ -23,11 +23,12 @@
   </div>
 </section>
 
-<footer class="footer"><div class="container footer-inner"><div><div class="footer-brand">Liste <span>Party</span></div></div></div></footer>
+<div id="footer"></div>
 
 <script src="js/config.js"></script><script src="js/api.js"></script>
 <script>
-renderNav('me');
+renderFooter();
+  renderNav('me');
 if (!requireAuth()) {}
 
 const qrModal = document.getElementById('qrModal');

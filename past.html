@@ -1,74 +1,282 @@
 <!doctype html>
-<html lang="fr">
-<head>
+<html lang="fr"><head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Soirées passées — Liste Party</title>
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* ── Recap grid mixte ─────────────────────────────────── */
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    @media (min-width: 560px)  { .media-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; } }
+    @media (min-width: 900px)  { .media-grid { grid-template-columns: repeat(4, 1fr); } }
+
+    .media-item {
+      position: relative; overflow: hidden;
+      border-radius: var(--r); cursor: pointer;
+      background: var(--panel); border: 1px solid var(--line);
+    }
+    /* Les images gardent leur ratio naturel (pas d'aspect-ratio forcé) */
+    .media-item img {
+      width: 100%; height: auto; display: block;
+      transition: filter 0.3s, transform 0.3s;
+      filter: saturate(0.85) brightness(0.9);
+    }
+    /* Les vidéos ont un ratio 16/9 pour l'aperçu */
+    .media-item.is-video {
+      aspect-ratio: 16/9;
+    }
+    .media-item.is-video video {
+      width: 100%; height: 100%; object-fit: cover;
+      display: block; pointer-events: none;
+    }
+    .media-item:hover img  { filter: saturate(1) brightness(1); transform: scale(1.03); }
+    .media-item:hover video { filter: brightness(1.05); }
+
+    /* Badge vidéo */
+    .video-badge {
+      position: absolute; top: 8px; left: 8px; z-index: 2;
+      background: rgba(0,0,0,0.7); color: var(--white);
+      font-family: 'Space Mono', monospace; font-size: 0.6rem;
+      padding: 3px 8px; border-radius: 2px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .play-icon {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .play-icon svg { width: 42px; height: 42px; opacity: 0.85; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+
+    /* ── LIGHTBOX ─────────────────────────────────────────── */
+    .lb {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.95);
+      display: none; align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .lb.open { display: flex; }
+
+    .lb-inner {
+      position: relative; max-width: 1100px; width: 100%;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+
+    .lb-media { width: 100%; max-height: 82vh; display: flex; align-items: center; justify-content: center; }
+    .lb-media img  { max-width: 100%; max-height: 82vh; object-fit: contain; border-radius: 4px; display: block; }
+    .lb-media video { max-width: 100%; max-height: 82vh; border-radius: 4px; display: block; outline: none; }
+
+    .lb-close {
+      position: fixed; top: 16px; right: 20px; z-index: 1001;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      color: var(--white); width: 40px; height: 40px;
+      border-radius: 50%; cursor: pointer;
+      font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .lb-close:hover { background: rgba(255,255,255,0.18); }
+
+    .lb-nav {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .lb-btn {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      color: var(--white); width: 44px; height: 44px;
+      border-radius: 50%; cursor: pointer; font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; flex-shrink: 0;
+    }
+    .lb-btn:hover { background: rgba(255,255,255,0.2); }
+    .lb-btn:disabled { opacity: 0.25; cursor: default; }
+    .lb-counter { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--smoke); }
+
+    .lb-caption {
+      font-family: 'Playfair Display', serif; font-style: italic;
+      color: var(--smoke); font-size: 0.9rem; text-align: center;
+    }
+  </style>
 </head>
 <body>
 <div id="nav"></div>
 
-<section class="container" style="padding: 60px 0;">
+<section class="container" style="padding: 48px 0 60px;">
   <div class="section-head">
     <div>
       <div class="section-eyebrow mono">La mémoire</div>
       <h2 class="section-title">Là où on <span class="gold">était</span></h2>
     </div>
   </div>
-  <p class="text-smoke mb-4" style="font-size:0.95rem;">Les archives. Ceux qui étaient là savent. Pour les autres, c'est l'occasion de pas rater la prochaine.</p>
+  <p class="text-smoke mb-4" style="font-size:0.95rem;">
+    Les archives. Ceux qui étaient là savent. Pour les autres, c'est l'occasion de pas rater la prochaine.
+  </p>
 
   <div id="pastList"><div class="empty-state">Chargement...</div></div>
 </section>
 
-<footer class="footer">
-  <div class="container footer-inner">
-    <div><div class="footer-brand">Liste <span>Party</span></div><div class="footer-sub">Dans le bon.</div></div>
+<!-- Lightbox -->
+<div class="lb" id="lb" role="dialog" aria-modal="true">
+  <button class="lb-close" id="lbClose" aria-label="Fermer">✕</button>
+  <div class="lb-inner">
+    <div class="lb-media" id="lbMedia"></div>
+    <div class="lb-nav">
+      <button class="lb-btn" id="lbPrev" aria-label="Précédent">‹</button>
+      <span class="lb-counter" id="lbCounter">1 / 1</span>
+      <button class="lb-btn" id="lbNext" aria-label="Suivant">›</button>
+    </div>
+    <div class="lb-caption" id="lbCaption"></div>
   </div>
-</footer>
+</div>
+
+<div id="footer"></div>
 
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script>
-  renderNav('past');
+renderNav('past');
+renderFooter();
 
-  async function load() {
-    const container = document.getElementById('pastList');
-    try {
-      const events = await apiFetch('/events/past');
-      if (!events.length) {
-        container.innerHTML = '<div class="empty-state">Aucune soirée archivée pour l\'instant. Ça vient.</div>';
-        return;
-      }
-      container.innerHTML = events.map(ev => {
-        const hasRecap = ev.recap_images.length > 0;
-        return `
-          <div style="margin-bottom:48px;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-              <div>
-                <div class="mono text-smoke mb-2">${formatDate(ev.date)} — ${ev.city}</div>
-                <h3 style="font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--white);">${ev.title}</h3>
-              </div>
-              <div style="display:flex;gap:10px;align-items:center;">
-                <span class="tag">${ev.seats_taken} participants</span>
-              </div>
-            </div>
-            ${hasRecap
-              ? `<div class="recap-grid">
-                   ${ev.recap_images.map(img => `
-                     <div class="recap-card">
-                       <img src="${img.url}" alt="${ev.title}" loading="lazy">
-                       <div class="recap-card-overlay"></div>
-                     </div>`).join('')}
-                 </div>`
-              : `<div style="padding:32px;background:var(--panel);border:1px solid var(--line);border-radius:4px;text-align:center;color:var(--smoke);font-style:italic;">Photos à venir...</div>`
-            }
-          </div>`;
-      }).join('<hr style="border:none;border-top:1px solid var(--line);margin:40px 0;">');
-    } catch(err) {
-      container.innerHTML = `<div class="empty-state">Erreur : ${err.message}</div>`;
-    }
+// ── Lightbox state ─────────────────────────────────────────
+let lbItems = [];   // tableau { url, media_type, caption }
+let lbIdx   = 0;
+let lbCurrentVideo = null;
+
+const lb        = document.getElementById('lb');
+const lbMedia   = document.getElementById('lbMedia');
+const lbCounter = document.getElementById('lbCounter');
+const lbCaption = document.getElementById('lbCaption');
+const lbPrev    = document.getElementById('lbPrev');
+const lbNext    = document.getElementById('lbNext');
+
+function lbOpen(items, idx) {
+  lbItems = items; lbIdx = idx;
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  lbRender();
+}
+
+function lbClose() {
+  lb.classList.remove('open');
+  document.body.style.overflow = '';
+  if (lbCurrentVideo) { lbCurrentVideo.pause(); lbCurrentVideo = null; }
+  lbMedia.innerHTML = '';
+}
+
+function lbRender() {
+  if (lbCurrentVideo) { lbCurrentVideo.pause(); lbCurrentVideo = null; }
+  const item = lbItems[lbIdx];
+  lbCounter.textContent = `${lbIdx + 1} / ${lbItems.length}`;
+  lbCaption.textContent = item.caption || '';
+  lbPrev.disabled = lbIdx === 0;
+  lbNext.disabled = lbIdx === lbItems.length - 1;
+
+  if (item.media_type === 'video') {
+    const v = document.createElement('video');
+    v.src = item.url; v.controls = true; v.autoplay = true;
+    v.style.cssText = 'max-width:100%;max-height:82vh;border-radius:4px;';
+    lbMedia.innerHTML = ''; lbMedia.appendChild(v);
+    lbCurrentVideo = v;
+  } else {
+    lbMedia.innerHTML = `<img src="${item.url}" alt="${item.caption || ''}" style="max-width:100%;max-height:82vh;object-fit:contain;border-radius:4px;">`;
   }
+}
 
-  load();
+document.getElementById('lbClose').addEventListener('click', lbClose);
+lb.addEventListener('click', e => { if (e.target === lb) lbClose(); });
+lbPrev.addEventListener('click', () => { if (lbIdx > 0) { lbIdx--; lbRender(); } });
+lbNext.addEventListener('click', () => { if (lbIdx < lbItems.length - 1) { lbIdx++; lbRender(); } });
+document.addEventListener('keydown', e => {
+  if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape') lbClose();
+  if (e.key === 'ArrowLeft')  { if (lbIdx > 0) { lbIdx--; lbRender(); } }
+  if (e.key === 'ArrowRight') { if (lbIdx < lbItems.length - 1) { lbIdx++; lbRender(); } }
+});
+
+// ── Render page ────────────────────────────────────────────
+async function load() {
+  const container = document.getElementById('pastList');
+  try {
+    const events = await apiFetch('/events/past');
+    if (!events.length) {
+      container.innerHTML = '<div class="empty-state">Aucune soirée archivée pour l\'instant. Ça vient.</div>';
+      return;
+    }
+
+    container.innerHTML = events.map((ev, ei) => {
+      const medias = ev.recap_images || [];
+      const hasMedia = medias.length > 0;
+
+      const gridHTML = hasMedia ? `
+        <div class="media-grid" data-ev="${ei}">
+          ${medias.map((m, mi) => {
+            if (m.media_type === 'video') {
+              return `
+                <div class="media-item is-video" data-ev="${ei}" data-idx="${mi}" onclick="openLb(${ei},${mi})">
+                  <video src="${m.url}" muted preload="metadata" loop></video>
+                  <div class="video-badge">
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><polygon points="0,0 8,4 0,8"/></svg>
+                    vidéo
+                  </div>
+                  <div class="play-icon">
+                    <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="30" cy="30" r="29" stroke="white" stroke-width="2" fill="rgba(0,0,0,0.35)"/>
+                      <polygon points="24,18 46,30 24,42" fill="white"/>
+                    </svg>
+                  </div>
+                </div>`;
+            } else {
+              return `
+                <div class="media-item" data-ev="${ei}" data-idx="${mi}" onclick="openLb(${ei},${mi})">
+                  <img src="${m.url}" alt="${ev.title}" loading="lazy">
+                </div>`;
+            }
+          }).join('')}
+        </div>` :
+        `<div style="padding:28px;background:var(--panel);border:1px solid var(--line);border-radius:4px;text-align:center;color:var(--smoke);font-style:italic;">
+          Photos & vidéos à venir...
+        </div>`;
+
+      return `
+        <div style="margin-bottom:52px;" data-ev-data='${JSON.stringify(medias.map(m => ({url:m.url,media_type:m.media_type,caption:ev.title})))}'>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div>
+              <div class="mono text-smoke mb-2">${formatDate(ev.date)} — ${ev.city}</div>
+              <h3 style="font-family:'Playfair Display',serif;font-size:1.7rem;color:var(--white);">${ev.title}</h3>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <span class="tag">${ev.seats_taken} participant${ev.seats_taken>1?'s':''}</span>
+              ${medias.filter(m=>m.media_type==='video').length > 0
+                ? `<span class="tag tag-lime">${medias.filter(m=>m.media_type==='video').length} vidéo${medias.filter(m=>m.media_type==='video').length>1?'s':''}</span>`
+                : ''}
+            </div>
+          </div>
+          ${gridHTML}
+        </div>`;
+    }).join('<hr style="border:none;border-top:1px solid var(--line);margin:40px 0;">');
+
+    // Stocker les données médias par soirée pour le lightbox
+    window._evMedias = events.map(ev => (ev.recap_images || []).map(m => ({
+      url: m.url, media_type: m.media_type, caption: ev.title
+    })));
+
+    // Hover preview sur les vidéos (play au survol)
+    document.querySelectorAll('.media-item.is-video').forEach(el => {
+      const v = el.querySelector('video');
+      if (!v) return;
+      el.addEventListener('mouseenter', () => v.play().catch(()=>{}));
+      el.addEventListener('mouseleave', () => { v.pause(); v.currentTime = 0; });
+    });
+
+  } catch(err) {
+    container.innerHTML = `<div class="empty-state">Erreur : ${err.message}</div>`;
+  }
+}
+
+function openLb(evIdx, mediaIdx) {
+  if (!window._evMedias || !window._evMedias[evIdx]) return;
+  lbOpen(window._evMedias[evIdx], mediaIdx);
+}
+
+load();
 </script>
 </body></html>

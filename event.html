@@ -8,17 +8,13 @@
 <div class="container"><div id="alertBox"></div></div>
 <div id="pageContent" class="container"><div class="empty-state">Chargement...</div></div>
 
-<footer class="footer">
-  <div class="container footer-inner">
-    <div><div class="footer-brand">Liste <span>Party</span></div><div class="footer-sub">Dans le bon.</div></div>
-    <div class="footer-right"><div class="mono text-smoke">Paiement sécurisé — Stripe</div></div>
-  </div>
-</footer>
+<div id="footer"></div>
 
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script>
-renderNav('home');
+renderFooter();
+  renderNav('home');
 const params  = new URLSearchParams(window.location.search);
 const eventId = params.get('id');
 if (params.get('cancelled')) showAlert(document.getElementById('alertBox'), 'Paiement annulé. Aucun débit effectué.', 'info');

@@ -11,7 +11,8 @@
 
 <script src="js/config.js"></script><script src="js/api.js"></script>
 <script>
-renderNav();
+renderFooter();
+  renderNav();
 const token = new URLSearchParams(location.search).get('token');
 
 async function load() {
@@ -89,4 +90,5 @@ async function load() {
 
 load();
 </script>
+<div id="footer"></div>
 </body></html>

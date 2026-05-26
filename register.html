@@ -45,6 +45,7 @@
 </div>
 <script src="js/config.js"></script><script src="js/api.js"></script>
 <script>
+  renderFooter();
   renderNav('register');
   if (auth.isLoggedIn()) window.location.href = 'index.html';
   const form = document.getElementById('regForm');
@@ -69,4 +70,5 @@
     } catch(err) { showAlert(alertBox, err.message); btn.disabled=false; btn.textContent="Je veux être dans le bon →"; }
   });
 </script>
+<div id="footer"></div>
 </body></html>
