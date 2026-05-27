@@ -57,16 +57,18 @@
 
   async function loadPage() {
     try {
-      const [events, past] = await Promise.all([
+      const [eventsRaw, pastRaw] = await Promise.all([
         apiFetch('/events?upcoming_only=true'),
         apiFetch('/events/past'),
       ]);
+      // Guard : s assurer que c est bien des tableaux
+      const events = Array.isArray(eventsRaw) ? eventsRaw : [];
+      const past   = Array.isArray(pastRaw)   ? pastRaw   : [];
 
-      // Stats
-     
       // Upcoming
       const grid = document.getElementById('eventsGrid');
-      document.getElementById('eventsCount').textContent = `${events.length} événement${events.length!==1?'s':''}`;
+      const countEl = document.getElementById('eventsCount');
+      if (countEl) countEl.textContent = `${events.length} événement${events.length!==1?'s':''}`;
 
       if (!events.length) {
         grid.innerHTML = '<div class="empty-state">Aucune soirée annoncée pour le moment. Reviens checker, ça bouge vite.</div>';
@@ -102,7 +104,7 @@
       if (past.length) {
         const recaps = past.filter(e => e.recap_images.length > 0).slice(0, 3);
         if (recaps.length) {
-          document.getElementById('recap-section').style.display = '';
+          const recapSec = document.getElementById('recap-section'); if (recapSec) recapSec.style.display = '';
           document.getElementById('recapGrid').innerHTML = recaps.map(ev => {
             const m = ev.recap_images[0];
             const isVid = m.media_type === 'video';

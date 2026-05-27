@@ -63,7 +63,10 @@
       text-align: center;
     }
     .scan-toast.show { opacity: 1; }
-    .scan-toast.ok   { background: rgba(9,60,9,0.92); }
+    .scan-toast.ok      { background: rgba(9,60,9,0.92); }
+    .scan-toast.ok-girl { background: rgba(140,10,80,0.92); }
+    .vf-square.ok-girl  { border-color: #ff69b4; box-shadow: 0 0 0 9999px rgba(0,0,0,0.42); }
+    .toast-badge.ok-girl { background: #ff69b4; color: #fff; }
     .scan-toast.bad  { background: rgba(80,8,8,0.92); }
     .scan-toast.warn { background: rgba(70,55,5,0.92); }
 
@@ -216,17 +219,19 @@ const toast   = document.getElementById('scanToast');
 
 // ── Toast ──────────────────────────────────────────────────
 function showToast(data) {
-  const type = data.valid ? 'ok' : (data.already_scanned ? 'warn' : 'bad');
+  // Détecter si c est une fille via le payload (gender stocké dans la DB via le scan)
+  const isGirl = data.valid && data.gender === 'F';
+  const type = data.valid ? (isGirl ? 'ok-girl' : 'ok') : (data.already_scanned ? 'warn' : 'bad');
 
   document.getElementById('toastIcon').textContent =
-    data.valid ? '✓' : (data.already_scanned ? '⚠' : '✕');
+    data.valid ? (isGirl ? '♀' : '✓') : (data.already_scanned ? '⚠' : '✕');
   document.getElementById('toastName').textContent =
     data.holder_name || (data.valid ? 'Valide' : 'Refusé');
   document.getElementById('toastSub').textContent =
     data.formula_name || data.event_title || '';
   const badge = document.getElementById('toastBadge');
   badge.className = `toast-badge ${type}`;
-  badge.textContent = data.valid ? '✓ BIENVENUE' : (data.already_scanned ? '⚠ DÉJÀ SCANNÉ' : '✕ REFUSÉ');
+  badge.textContent = data.valid ? (isGirl ? '♀ ENTRÉE GRATUITE' : '✓ BIENVENUE') : (data.already_scanned ? '⚠ DÉJÀ SCANNÉ' : '✕ REFUSÉ');
 
   vfSq.className = `vf-square ${type}`;
   toast.className = `scan-toast show ${type}`;

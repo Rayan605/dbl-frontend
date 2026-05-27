@@ -20,6 +20,7 @@ const eventId = params.get('id');
 if (params.get('cancelled')) showAlert(document.getElementById('alertBox'), 'Paiement annulé. Aucun débit effectué.', 'info');
 
 let selectedFormulaId = null;
+let selectedFormuleFree = false;
 
 async function load() {
   const pc = document.getElementById('pageContent');
@@ -71,18 +72,24 @@ function render(ev, formulas) {
       </div>
 
       <div class="formulas-grid" id="formulasList">
-        ${formulas.map(f => `
-          <div class="formula-card" data-id="${f.id}" data-price="${f.price_cents}">
-            <div class="formula-left">
-              <div class="formula-name">${f.name}</div>
-              <div class="formula-desc">${f.description || ''}</div>
-              ${f.max_guests > 0 ? `<div class="formula-guests">✦ Tu peux inviter jusqu'à ${f.max_guests} personne${f.max_guests > 1 ? 's' : ''}</div>` : ''}
-            </div>
-            <div class="formula-right">
-              <div class="formula-price">${formatPrice(f.price_cents)}</div>
-              <div class="formula-check">✓</div>
-            </div>
-          </div>`).join('')}
+        ${formulas.map(f => {
+          const isFree = f.price_cents === 0;
+          const userGender = auth.user ? auth.user.gender : null;
+          // Formule à 0€ : visible mais grisée pour les non-filles
+          const unavailFree = isFree && userGender !== 'F';
+          return `
+            <div class="formula-card${unavailFree ? ' formula-unavail' : ''}" data-id="${f.id}" data-price="${f.price_cents}" data-free="${isFree}">
+              <div class="formula-left">
+                <div class="formula-name">${f.name}${isFree ? ' <span style="background:#ff69b4;color:#fff;font-size:0.55rem;padding:2px 7px;border-radius:2px;vertical-align:middle;font-family:Space Mono,monospace;letter-spacing:0.06em;">GRATUIT FILLES</span>' : ''}</div>
+                <div class="formula-desc">${f.description || ''}${isFree ? '<br><span style="color:#ff69b4;font-size:0.8rem;">✦ Entrée gratuite pour les filles</span>' : ''}</div>
+                ${f.max_guests > 0 ? `<div class="formula-guests">✦ Tu peux inviter jusqu'à ${f.max_guests} personne${f.max_guests > 1 ? 's' : ''}</div>` : ''}
+              </div>
+              <div class="formula-right">
+                <div class="formula-price" style="${isFree ? 'color:#ff69b4;' : ''}">${isFree ? 'GRATUIT' : formatPrice(f.price_cents)}</div>
+                <div class="formula-check">✓</div>
+              </div>
+            </div>`;
+        }).join('')}
       </div>
 
       <div id="resAlert" style="margin-top:16px;"></div>
@@ -108,9 +115,11 @@ function render(ev, formulas) {
   // Sélection formule (radio-like)
   document.querySelectorAll('.formula-card').forEach(el => {
     el.addEventListener('click', () => {
+      if (el.classList.contains('formula-unavail')) return; // formule gratuite non dispo pour ce genre
       document.querySelectorAll('.formula-card').forEach(x => x.classList.remove('selected'));
       el.classList.add('selected');
       selectedFormulaId = +el.dataset.id;
+      selectedFormuleFree = el.dataset.free === 'true';
     });
   });
 
@@ -130,6 +139,24 @@ async function reserve() {
   }
   const btn = document.getElementById('reserveBtn');
   btn.disabled = true;
+
+  // Formule gratuite pour les filles → pas de Stripe
+  if (selectedFormuleFree && auth.user && auth.user.gender === 'F') {
+    btn.innerHTML = '<span class="spinner"></span> Réservation en cours...';
+    try {
+      await apiFetch('/reservations/free', {
+        method: 'POST',
+        body: { event_id: +eventId, formula_id: selectedFormulaId, quantity: 1 }
+      });
+      window.location.href = `my-reservations.html`;
+    } catch(err) {
+      showAlert(alertBox, err.message);
+      btn.disabled = false;
+      btn.innerHTML = 'Réserver →';
+    }
+    return;
+  }
+
   btn.innerHTML = '<span class="spinner"></span> Redirection Stripe...';
   try {
     const data = await apiFetch('/reservations/checkout', {

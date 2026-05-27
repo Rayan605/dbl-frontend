@@ -343,6 +343,8 @@ h1, h2, h3, h4 {
   box-shadow: 0 0 0 1px var(--gold);
 }
 .formula-card.selected .formula-check { opacity: 1; }
+.formula-unavail { opacity: 0.42; cursor: not-allowed; border-style: dashed !important; }
+.formula-unavail:hover { border-color: var(--line) !important; background: var(--deep) !important; }
 .formula-left { flex: 1; min-width: 0; }
 .formula-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--white); margin-bottom: 3px; }
 .formula-desc { color: var(--smoke); font-size: 0.85rem; line-height: 1.4; }
