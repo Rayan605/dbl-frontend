@@ -318,6 +318,12 @@ function renderFormulas() {
             <label>Invités max <span style="color:var(--smoke);font-size:0.72rem;">(0 = pas d'invitations)</span></label>
             <input type="number" id="f-guests-${f.id}" value="${f.max_guests}" min="0" max="99">
           </div>
+          <div class="field">
+            <label style="flex-direction:row;align-items:center;gap:8px;cursor:pointer;display:flex;">
+              <input type="checkbox" id="f-girls-${f.id}" ${f.is_girls_only ? 'checked' : ''} style="width:16px;height:16px;accent-color:#e91e8c;flex-shrink:0;">
+              <span style="color:#ff69b4;font-size:0.8rem;">Formule filles uniquement (gratuite, invisible pour les hommes)</span>
+            </label>
+          </div>
           <div class="field f-desc-field">
             <label>Description</label>
             <textarea id="f-desc-${f.id}" style="min-height:80px;">${esc(f.description||'')}</textarea>
@@ -372,7 +378,7 @@ async function saveFormula(id, btn) {
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
   try {
     const updated = await apiFetch(`/formulas/${id}`, { method:'PATCH',
-      body: { name, description: desc || null, price_cents: price, max_guests: guests }
+      body: { name, description: desc || null, price_cents: price, max_guests: guests, is_girls_only: document.getElementById(`f-girls-${id}`) && document.getElementById(`f-girls-${id}`).checked ? 1 : 0 }
     });
     // Mettre à jour le cache
     const idx = formulas.findIndex(f => f.id === id);
@@ -425,6 +431,12 @@ function showNewFormulaForm() {
           <label>Invités max <span style="color:var(--smoke);font-size:0.72rem;">(0 = aucun)</span></label>
           <input type="number" id="nf-guests" min="0" max="99" value="0">
         </div>
+        <div class="field">
+          <label style="flex-direction:row;align-items:center;gap:8px;cursor:pointer;display:flex;">
+            <input type="checkbox" id="nf-girls" style="width:16px;height:16px;accent-color:#e91e8c;flex-shrink:0;">
+            <span style="color:#ff69b4;font-size:0.8rem;">Formule filles uniquement (gratuite, invisible pour les hommes)</span>
+          </label>
+        </div>
         <div class="field f-desc-field">
           <label>Description</label>
           <textarea id="nf-desc" style="min-height:80px;" placeholder="Ce que la formule inclut..."></textarea>
@@ -454,7 +466,7 @@ async function createFormula() {
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Création...';
   try {
     const created = await apiFetch('/formulas', { method:'POST',
-      body: { name, description: desc || null, price_cents: price, max_guests: guests }
+      body: { name, description: desc || null, price_cents: price, max_guests: guests, is_girls_only: document.getElementById('nf-girls') && document.getElementById('nf-girls').checked ? 1 : 0 }
     });
     formulas.push(created);
     renderFormulas();
