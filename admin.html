@@ -4,217 +4,300 @@
   <title>Admin — Liste Party</title>
   <link rel="stylesheet" href="css/styles.css">
   <style>
-    /* ── Formule cards ─────────────────────────────────────── */
-    .f-card {
-      background: var(--deep);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      overflow: hidden;
-      transition: border-color .2s;
+    /* ── Tabs ─────────────────────────────────────────────── */
+    .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 28px; gap: 0; overflow-x: auto; }
+    .tab-btn {
+      padding: 12px 20px; font-size: 13px; font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--sub); background: none; border: none;
+      border-bottom: 2px solid transparent; cursor: pointer;
+      white-space: nowrap; transition: color 0.15s, border-color 0.15s;
+      margin-bottom: -1px;
     }
-    .f-card:hover { border-color: var(--ghost); }
-    .f-card.editing { border-color: var(--gold); }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--bright); border-bottom-color: var(--accent); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
 
-    .f-card-head {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 16px 20px;
-      cursor: pointer;
-      user-select: none;
+    /* ── Section blocks ───────────────────────────────────── */
+    .admin-block {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 24px; margin-bottom: 20px;
     }
+    .admin-block-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.3rem; font-weight: 700; text-transform: uppercase;
+      color: var(--bright); letter-spacing: 0.03em; margin-bottom: 4px;
+    }
+    .admin-block-sub { color: var(--sub); font-size: 13px; margin-bottom: 20px; }
 
-    .f-card-pos {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.7rem;
-      color: var(--smoke);
-      width: 22px;
-      flex-shrink: 0;
-    }
-
-    .f-card-name {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.15rem;
-      color: var(--white);
-      flex: 1;
-    }
-
-    .f-card-price {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.9rem;
-      color: var(--gold);
-      flex-shrink: 0;
-    }
-
-    .f-card-guests {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.68rem;
-      color: var(--lime);
-      flex-shrink: 0;
-    }
-
-    .f-card-chevron {
-      color: var(--ghost);
-      font-size: 0.8rem;
-      transition: transform .2s;
-      flex-shrink: 0;
-    }
+    /* ── Formula card (admin) ─────────────────────────────── */
+    .f-card { background: var(--raised); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 6px; }
+    .f-card.open { border-color: var(--accent); }
+    .f-card-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; cursor: pointer; user-select: none; }
+    .f-card-num  { font-size: 11px; font-weight: 700; color: var(--muted); width: 20px; flex-shrink: 0; }
+    .f-card-name { font-weight: 600; font-size: 15px; color: var(--bright); flex: 1; }
+    .f-card-price { font-family: 'Barlow Condensed', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    .f-card-badge { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 2px; border: 1px solid var(--border); color: var(--sub); }
+    .f-card-badge.full { border-color: var(--danger); color: var(--danger); }
+    .f-card-badge.warn { border-color: var(--accent); color: var(--accent); }
+    .f-card-badge.ok   { border-color: #6a9; color: #8c8; }
+    .f-card-chevron { color: var(--muted); font-size: 11px; transition: transform .2s; flex-shrink: 0; }
     .f-card.open .f-card-chevron { transform: rotate(90deg); }
-
-    .f-card-body {
-      display: none;
-      padding: 0 20px 20px;
-      border-top: 1px solid var(--line);
-    }
+    .f-card-body { display: none; padding: 0 18px 18px; border-top: 1px solid var(--border); }
     .f-card.open .f-card-body { display: block; }
-
-    .f-body-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin-top: 16px;
-    }
-    @media (max-width: 600px) { .f-body-grid { grid-template-columns: 1fr; } }
-
+    .f-body-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width:600px) { .f-body-grid { grid-template-columns: 1fr; } }
     .f-desc-field { grid-column: 1 / -1; }
-
-    .f-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 16px;
-      flex-wrap: wrap;
-    }
-
-    /* Prix affiché en €  */
-    .price-hint {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.68rem;
-      color: var(--gold);
-      margin-top: 4px;
-    }
-
-    /* ── Bouton Ajouter ────────────────────────────────────── */
+    .f-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .price-hint { font-size: 11px; color: var(--accent); margin-top: 4px; font-weight: 600; }
     .add-formula-btn {
-      width: 100%;
-      padding: 16px;
-      background: transparent;
-      border: 1px dashed var(--ghost);
-      border-radius: 6px;
-      color: var(--smoke);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: border-color .2s, color .2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 10px;
+      width: 100%; padding: 14px; background: transparent;
+      border: 1px dashed var(--border); border-radius: var(--r);
+      color: var(--sub); font-family: inherit; font-size: 13px;
+      cursor: pointer; transition: border-color .15s, color .15s;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      margin-top: 8px;
     }
-    .add-formula-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .add-formula-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .new-formula-form { background: var(--raised); border: 1px solid var(--accent); border-radius: var(--r); padding: 18px; margin-top: 8px; }
 
-    /* ── Nouvelle formule (form inline) ────────────────────── */
-    .new-formula-form {
-      background: var(--deep);
-      border: 1px solid var(--gold);
-      border-radius: 6px;
-      padding: 20px;
-      margin-top: 10px;
+    /* ── Resa table ───────────────────────────────────────── */
+    .resa-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .resa-table th {
+      text-align: left; padding: 8px 12px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase; color: var(--sub);
+      border-bottom: 1px solid var(--border); white-space: nowrap;
     }
-    .new-formula-form h4 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.1rem;
-      color: var(--white);
-      margin-bottom: 14px;
+    .resa-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .resa-table tr:hover td { background: var(--raised); }
+    .resa-table tr:last-child td { border-bottom: none; }
+    .status-pill {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 2px;
+    }
+    .status-pill.paid     { background: rgba(200,169,110,0.15); color: var(--accent); }
+    .status-pill.pending  { background: rgba(73,73,73,0.3);     color: var(--sub); }
+    .status-pill.cancelled{ background: rgba(217,79,79,0.12);   color: var(--danger); }
+    .qr-btn {
+      padding: 4px 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+      text-transform: uppercase; background: var(--raised); border: 1px solid var(--border);
+      color: var(--text); cursor: pointer; border-radius: 2px; transition: border-color .15s;
+    }
+    .qr-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── QR Modal ─────────────────────────────────────────── */
+    .modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.88); z-index: 500;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal.open { display: flex; }
+    .modal-inner { max-width: 380px; width: 100%; position: relative; }
+    .modal-close {
+      position: absolute; top: -38px; right: 0;
+      background: none; border: none; color: var(--text);
+      font-size: 20px; cursor: pointer;
     }
 
-    /* ── Save feedback ─────────────────────────────────────── */
-    @keyframes savedFlash {
-      0%   { background: rgba(181,255,71,.15); }
-      100% { background: transparent; }
+    /* ── Event edit ───────────────────────────────────────── */
+    .img-thumb-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .img-thumb {
+      position: relative; width: 90px; border-radius: 2px; overflow: hidden;
+      border: 1px solid var(--border);
     }
-    .saved-flash { animation: savedFlash 1s ease; }
+    .img-thumb img { width: 100%; height: 70px; object-fit: cover; display: block; }
+    .img-del {
+      position: absolute; top: 2px; right: 2px;
+      background: rgba(0,0,0,0.7); border: none; color: #fff;
+      width: 18px; height: 18px; font-size: 10px;
+      cursor: pointer; border-radius: 2px; display: flex;
+      align-items: center; justify-content: center;
+    }
+    .img-del:hover { background: var(--danger); }
+
+    /* ── Formula stats bar ────────────────────────────────── */
+    .stat-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+    .stat-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .3s; }
+    .stat-bar-fill.full { background: var(--danger); }
   </style>
 </head>
 <body>
 <div id="nav"></div>
-<section class="container" style="padding:56px 0;">
 
-  <div class="section-head">
+<section class="container" style="padding: 40px 0 60px;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;flex-wrap:wrap;gap:12px;">
     <div>
-      <div class="section-eyebrow mono">Back-office</div>
-      <h2 class="section-title">Zone <span class="gold">admin</span></h2>
+      <div class="label mb-2">Back-office</div>
+      <h2 class="section-title">Admin</h2>
     </div>
   </div>
 
-  <!-- ── CRÉER SOIRÉE ───────────────────────────────────── -->
-  <div class="admin-block" style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
-    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:18px;">Créer une <span class="text-gold">soirée</span></h3>
-    <div id="createAlert"></div>
-    <form id="createForm" class="form">
-      <div class="field"><label>Titre</label><input type="text" id="ev-title" required></div>
-      <div class="form-row">
-        <div class="field"><label>Date & heure</label><input type="datetime-local" id="ev-date" required></div>
-        <div class="field"><label>Places max</label><input type="number" id="ev-max" min="1" required></div>
-      </div>
-      <div class="form-row">
-        <div class="field"><label>Ville</label><input type="text" id="ev-city" required></div>
-        <div class="field"><label>Département</label><input type="text" id="ev-dept" required placeholder="ex: 75"></div>
-      </div>
-      <div class="field"><label>Description</label><textarea id="ev-desc" placeholder="Ce soir on sort les grands bacs..."></textarea></div>
-      <div class="field"><label>Images promo (jpg, png, webp · 8 Mo max)</label><input type="file" id="ev-images" multiple accept="image/*"></div>
-      <button type="submit" class="btn btn-gold" id="createBtn">Publier la soirée</button>
-    </form>
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('soirees')">Soirées</button>
+    <button class="tab-btn" onclick="switchTab('formules')">Formules</button>
+    <button class="tab-btn" onclick="switchTab('reservations')">Réservations</button>
+    <button class="tab-btn" onclick="switchTab('users')">Utilisateurs</button>
   </div>
 
-  <!-- ── RECAP PHOTOS ───────────────────────────────────── -->
-  <div class="admin-block" style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
-    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:6px;">Photos <span class="text-lime">souvenir</span></h3>
-    <p class="text-smoke mb-4" style="font-size:0.9rem;">Ajoute les photos d'une soirée passée. Elle sera automatiquement marquée comme terminée.</p>
-    <div class="form-row" style="margin-bottom:14px;">
-      <div class="field"><label>Soirée</label><select id="recapEventId"><option value="">Choisir...</option></select></div>
-      <div class="field"><label>Photos &amp; vidéos (jpg, png, mp4, mov…)</label><input type="file" id="recapImages" multiple accept="image/*,video/mp4,video/mov,video/webm,video/quicktime"></div>
+  <!-- ═══════════ TAB : SOIRÉES ═══════════ -->
+  <div id="tab-soirees" class="tab-pane active">
+
+    <!-- Créer une soirée -->
+    <div class="admin-block">
+      <div class="admin-block-title">Créer une soirée</div>
+      <div id="createAlert"></div>
+      <form id="createForm" class="form">
+        <div class="field"><label>Titre</label><input type="text" id="ev-title" required></div>
+        <div class="form-row">
+          <div class="field"><label>Date & heure</label><input type="datetime-local" id="ev-date" required></div>
+          <div class="field"><label>Places max</label><input type="number" id="ev-max" min="1" required></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Ville</label><input type="text" id="ev-city" required></div>
+          <div class="field"><label>Département</label><input type="text" id="ev-dept" placeholder="ex: 75"></div>
+        </div>
+        <div class="field"><label>Description</label><textarea id="ev-desc"></textarea></div>
+        <div class="field"><label>Images (jpg, png, webp)</label><input type="file" id="ev-images" multiple accept="image/*"></div>
+        <button type="submit" class="btn btn-gold" id="createBtn">Publier la soirée</button>
+      </form>
     </div>
-    <div id="recapAlert"></div>
-    <button class="btn btn-ghost" id="recapBtn">Ajouter les photos</button>
-  </div>
 
-  <!-- ── FORMULES ───────────────────────────────────────── -->
-  <div class="admin-block" id="formulasBlock" style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:12px;">
-      <div>
-        <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);">Les <span class="text-gold">formules</span></h3>
-        <p class="text-smoke" style="font-size:0.82rem;margin-top:4px;">Clique sur une formule pour modifier. Le prix est en centimes (100€ = 10000). Les invités = nombre max d'invités par réservation.</p>
-      </div>
-      <span class="mono text-smoke" id="formulaCount"></span>
+    <!-- Liste des soirées -->
+    <div class="admin-block">
+      <div class="admin-block-title">Soirées publiées</div>
+      <div id="eventsAdmin"></div>
     </div>
-    <div id="formulasAdmin" style="display:grid;gap:8px;margin-top:16px;"></div>
-    <div id="newFormulaWrap"></div>
-    <div id="formulasAlert" style="margin-top:8px;"></div>
+
+    <!-- Modal édition soirée -->
+    <div class="modal" id="editModal">
+      <div class="modal-inner" style="max-width:560px;">
+        <button class="modal-close" id="editClose">✕</button>
+        <div class="admin-block" style="margin:0;max-height:90vh;overflow-y:auto;">
+          <div class="admin-block-title" style="margin-bottom:14px;">Modifier la soirée</div>
+          <div id="editAlert"></div>
+          <form id="editForm" class="form">
+            <div class="field"><label>Titre</label><input type="text" id="edit-title"></div>
+            <div class="form-row">
+              <div class="field"><label>Date & heure</label><input type="datetime-local" id="edit-date"></div>
+              <div class="field"><label>Places max</label><input type="number" id="edit-max" min="1"></div>
+            </div>
+            <div class="form-row">
+              <div class="field"><label>Ville</label><input type="text" id="edit-city"></div>
+              <div class="field"><label>Département</label><input type="text" id="edit-dept"></div>
+            </div>
+            <div class="field"><label>Description</label><textarea id="edit-desc"></textarea></div>
+            <div class="field">
+              <label>Images actuelles</label>
+              <div id="edit-current-imgs" class="img-thumb-wrap"></div>
+            </div>
+            <div class="field"><label>Ajouter des images</label><input type="file" id="edit-images" multiple accept="image/*"></div>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <button type="submit" class="btn btn-gold" id="editBtn">Enregistrer</button>
+              <button type="button" class="btn btn-ghost" id="editCancelBtn">Annuler</button>
+            </div>
+          </form>
+
+          <!-- Photos recap -->
+          <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
+          <div class="admin-block-title" style="margin-bottom:8px;font-size:1rem;">Photos souvenir</div>
+          <div id="editRecapImgs" class="img-thumb-wrap" style="margin-bottom:10px;"></div>
+          <div class="field"><label>Ajouter photos/vidéos souvenir</label><input type="file" id="edit-recap-images" multiple accept="image/*,video/*"></div>
+          <div id="recapAlert" style="margin-top:8px;"></div>
+          <button class="btn btn-ghost" id="addRecapBtn" style="margin-top:8px;">Ajouter</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- ── UTILISATEURS & SCANNERS ────────────────────────── -->
-  <div class="admin-block" style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;margin-bottom:24px;">
-    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:6px;">Utilisateurs & <span class="text-lime">Scanners</span></h3>
-    <p class="text-smoke mb-4" style="font-size:0.88rem;">Active le mode scanner pour les personnes qui vérifient les QR à l'entrée.</p>
-    <input type="text" id="userSearch" placeholder="Rechercher par nom ou email..."
-      style="background:var(--deep);border:1px solid var(--line);border-radius:4px;padding:10px 16px;color:var(--bone);font-family:inherit;font-size:0.9rem;width:100%;margin-bottom:14px;">
-    <div id="usersAdmin"></div>
+  <!-- ═══════════ TAB : FORMULES ═══════════ -->
+  <div id="tab-formules" class="tab-pane">
+    <div class="admin-block">
+      <div class="admin-block-title">Formules</div>
+      <div class="admin-block-sub">Prix en centimes (100€ = 10000). Réservations max : 0 = illimité.</div>
+      <div style="margin-bottom:10px;">
+        <label class="label">Soirée pour les stats</label>
+        <select id="statsEventSel" style="margin-top:6px;background:var(--raised);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--r);font-family:inherit;font-size:13px;width:100%;max-width:360px;">
+          <option value="">— Choisir une soirée —</option>
+        </select>
+      </div>
+      <div id="formulasAdmin"></div>
+      <div id="newFormulaWrap"></div>
+      <div id="formulasAlert" style="margin-top:8px;"></div>
+    </div>
   </div>
 
-  <!-- ── SOIRÉES ────────────────────────────────────────── -->
-  <div class="admin-block" style="background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:28px;">
-    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:16px;">Soirées publiées</h3>
-    <div id="eventsAdmin"></div>
+  <!-- ═══════════ TAB : RÉSERVATIONS ═══════════ -->
+  <div id="tab-reservations" class="tab-pane">
+    <div class="admin-block">
+      <div class="admin-block-title">Réservations</div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <select id="resaEventFilter" style="background:var(--raised);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--r);font-family:inherit;font-size:13px;flex:1;min-width:180px;">
+          <option value="">Toutes les soirées</option>
+        </select>
+        <select id="resaStatusFilter" style="background:var(--raised);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--r);font-family:inherit;font-size:13px;">
+          <option value="">Tous statuts</option>
+          <option value="paid">Payées</option>
+          <option value="pending">En attente</option>
+          <option value="cancelled">Annulées</option>
+        </select>
+        <button class="btn btn-outline" onclick="loadReservations()">Filtrer</button>
+      </div>
+      <div id="resaCount" class="label" style="margin-bottom:12px;"></div>
+      <div style="overflow-x:auto;">
+        <table class="resa-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Participant</th>
+              <th>Soirée</th>
+              <th>Formule</th>
+              <th>Statut</th>
+              <th>Montant</th>
+              <th>Date</th>
+              <th>QR</th>
+            </tr>
+          </thead>
+          <tbody id="resaTableBody">
+            <tr><td colspan="8" style="text-align:center;color:var(--sub);padding:24px;">Chargement…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TAB : UTILISATEURS ═══════════ -->
+  <div id="tab-users" class="tab-pane">
+    <div class="admin-block">
+      <div class="admin-block-title">Utilisateurs</div>
+      <input type="text" id="userSearch" placeholder="Rechercher nom, email…"
+        style="width:100%;max-width:360px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--text);font-family:inherit;font-size:13px;margin-bottom:14px;"
+        oninput="filterUsers(this.value)">
+      <div id="usersAdmin"></div>
+    </div>
   </div>
 
 </section>
 
+<!-- QR Modal -->
+<div class="modal" id="qrModal">
+  <div class="modal-inner">
+    <button class="modal-close" id="qrClose">✕</button>
+    <div id="qrContent"></div>
+  </div>
+</div>
+
+<div id="footer"></div>
+
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
 <script>
+renderNav('admin');
 renderFooter();
-  renderNav('admin');
 if (!requireAuth()) {}
 if (!auth.isAdmin()) {
   document.body.innerHTML = '<div class="container"><div class="empty-state">Zone réservée aux admins.</div></div>';
@@ -227,133 +310,319 @@ function euros(cents) {
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
 
-// ── CRÉER SOIRÉE ─────────────────────────────────────────
+// ── Tabs ─────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelector(`.tab-btn[onclick="switchTab('${name}')"]`).classList.add('active');
+  if (name === 'reservations') loadReservations();
+}
+
+// ══════════════════════════════════════════════════════════
+//  SOIRÉES
+// ══════════════════════════════════════════════════════════
+let allEvents = [];
+
 document.getElementById('createForm').addEventListener('submit', async e => {
   e.preventDefault();
   const alertBox = document.getElementById('createAlert');
   clearAlert(alertBox);
   const btn = document.getElementById('createBtn');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Publication...';
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
   const fd = new FormData();
-  fd.append('title',      document.getElementById('ev-title').value);
-  fd.append('description',document.getElementById('ev-desc').value);
-  fd.append('date',       new Date(document.getElementById('ev-date').value).toISOString());
-  fd.append('city',       document.getElementById('ev-city').value);
-  fd.append('department', document.getElementById('ev-dept').value);
-  fd.append('max_people', document.getElementById('ev-max').value);
+  fd.append('title',       document.getElementById('ev-title').value);
+  fd.append('description', document.getElementById('ev-desc').value);
+  fd.append('date',        new Date(document.getElementById('ev-date').value).toISOString());
+  fd.append('city',        document.getElementById('ev-city').value);
+  fd.append('department',  document.getElementById('ev-dept').value);
+  fd.append('max_people',  document.getElementById('ev-max').value);
   for (const f of document.getElementById('ev-images').files) fd.append('images', f);
   try {
     await apiFetch('/events', { method:'POST', body:fd });
-    showAlert(alertBox, 'Soirée publiée, les gars vont kiffer.', 'success');
+    showAlert(alertBox, 'Soirée créée.', 'success');
     document.getElementById('createForm').reset();
     loadEvents();
   } catch(err) { showAlert(alertBox, err.message); }
   finally { btn.disabled=false; btn.textContent='Publier la soirée'; }
 });
 
-// ── RECAP PHOTOS ─────────────────────────────────────────
-document.getElementById('recapBtn').addEventListener('click', async () => {
+async function loadEvents() {
+  try {
+    const [upcoming, past] = await Promise.all([
+      apiFetch('/events?upcoming_only=false'),
+      apiFetch('/events/past'),
+    ]);
+    const seen = new Set();
+    allEvents = [...(Array.isArray(upcoming)?upcoming:[]), ...(Array.isArray(past)?past:[])]
+      .filter(e => { if (seen.has(e.id)) return false; seen.add(e.id); return true; });
+
+    // Mettre à jour les selects
+    const evOpts = '<option value="">Toutes les soirées</option>' +
+      allEvents.map(e => `<option value="${e.id}">${esc(e.title)} (${new Date(e.date).toLocaleDateString('fr-FR')})</option>`).join('');
+    document.getElementById('resaEventFilter').innerHTML = evOpts;
+    document.getElementById('statsEventSel').innerHTML =
+      '<option value="">— Choisir —</option>' +
+      allEvents.map(e => `<option value="${e.id}">${esc(e.title)}</option>`).join('');
+
+    renderEventsList();
+  } catch(err) {
+    document.getElementById('eventsAdmin').innerHTML = `<div class="label">${err.message}</div>`;
+  }
+}
+
+function renderEventsList() {
+  const container = document.getElementById('eventsAdmin');
+  if (!allEvents.length) { container.innerHTML = '<div class="label">Aucune soirée.</div>'; return; }
+  container.innerHTML = allEvents.map(ev => `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:14px 0;border-top:1px solid var(--border);gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:180px;">
+        <div class="label" style="margin-bottom:3px;">${fmtDate(ev.date)} · ${esc(ev.department)}</div>
+        <div style="font-weight:600;color:var(--bright);">${esc(ev.title)}</div>
+        <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;">
+          <span class="tag">${ev.seats_taken}/${ev.max_people} places</span>
+          <span class="tag ${ev.is_past?'tag-red':'tag-gold'}">${ev.is_past?'PASSÉE':'À VENIR'}</span>
+          ${ev.reservations_open===0 ? '<span class="tag tag-red">RÉSA FERMÉES</span>' : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px;" onclick="openEdit(${ev.id})">Éditer</button>
+        <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px;" onclick="togglePast(${ev.id}, ${ev.is_past})">${ev.is_past?'Remettre':'Archiver'}</button>
+        <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px;${ev.reservations_open===0?'border-color:var(--danger);color:var(--danger);':''}" onclick="toggleResaOpen(${ev.id}, ${ev.reservations_open===0?1:0})">${ev.reservations_open===0?'🔒 Ouvrir résa':'🔓 Fermer résa'}</button>
+        <button class="btn btn-red"   style="padding:7px 12px;font-size:12px;" onclick="delEvent(${ev.id})">Suppr.</button>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleResaOpen(id, openVal) {
+  try {
+    await apiFetch(`/events/${id}/toggle-reservations?open=${openVal}`, { method:'PATCH' });
+    await loadEvents();
+  } catch(err) { alert(err.message); }
+}
+
+async function togglePast(id, isPast) {
+  try { await apiFetch(`/events/${id}/mark-past?is_past=${!isPast}`, { method:'PATCH' }); loadEvents(); }
+  catch(err) { alert(err.message); }
+}
+
+async function delEvent(id) {
+  if (!confirm('Supprimer cette soirée et toutes ses réservations ?')) return;
+  try { await apiFetch(`/events/${id}`, { method:'DELETE' }); loadEvents(); }
+  catch(err) { alert(err.message); }
+}
+
+// ── Edit modal ───────────────────────────────────────────
+let editEventId = null;
+let deleteImageIds = new Set();
+
+const editModal = document.getElementById('editModal');
+document.getElementById('editClose').addEventListener('click', () => editModal.classList.remove('open'));
+document.getElementById('editCancelBtn').addEventListener('click', () => editModal.classList.remove('open'));
+editModal.addEventListener('click', e => { if (e.target === editModal) editModal.classList.remove('open'); });
+
+async function openEdit(id) {
+  editEventId = id;
+  deleteImageIds = new Set();
+  clearAlert(document.getElementById('editAlert'));
+  clearAlert(document.getElementById('recapAlert'));
+  const ev = allEvents.find(e => e.id === id);
+  if (!ev) return;
+
+  // Préremplir
+  document.getElementById('edit-title').value = ev.title || '';
+  document.getElementById('edit-city').value   = ev.city || '';
+  document.getElementById('edit-dept').value   = ev.department || '';
+  document.getElementById('edit-desc').value   = ev.description || '';
+  document.getElementById('edit-max').value    = ev.max_people || '';
+  if (ev.date) {
+    // datetime-local attend "YYYY-MM-DDTHH:mm"
+    const d = new Date(ev.date);
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('edit-date').value =
+      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  // Images actuelles
+  const imgWrap = document.getElementById('edit-current-imgs');
+  imgWrap.innerHTML = ev.images.map(img => `
+    <div class="img-thumb" id="thumb-${img.id}">
+      <img src="${img.url}" alt="">
+      <button class="img-del" onclick="markDelImg(${img.id})" title="Supprimer">✕</button>
+    </div>`).join('') || '<span class="label">Aucune image</span>';
+
+  // Images recap
+  const recapWrap = document.getElementById('editRecapImgs');
+  recapWrap.innerHTML = ev.recap_images.map(img => `
+    <div class="img-thumb">
+      <img src="${img.url}" alt="">
+    </div>`).join('') || '';
+
+  editModal.classList.add('open');
+}
+
+function markDelImg(imgId) {
+  deleteImageIds.add(imgId);
+  const el = document.getElementById(`thumb-${imgId}`);
+  if (el) { el.style.opacity = '0.3'; el.querySelector('.img-del').textContent = '↩'; el.querySelector('.img-del').onclick = () => unmarkDelImg(imgId); }
+}
+function unmarkDelImg(imgId) {
+  deleteImageIds.delete(imgId);
+  const el = document.getElementById(`thumb-${imgId}`);
+  if (el) { el.style.opacity = '1'; el.querySelector('.img-del').textContent = '✕'; el.querySelector('.img-del').onclick = () => markDelImg(imgId); }
+}
+
+document.getElementById('editForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const alertBox = document.getElementById('editAlert');
+  clearAlert(alertBox);
+  const btn = document.getElementById('editBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+
+  const fd = new FormData();
+  const title = document.getElementById('edit-title').value.trim();
+  const date  = document.getElementById('edit-date').value;
+  const city  = document.getElementById('edit-city').value.trim();
+  const dept  = document.getElementById('edit-dept').value.trim();
+  const max   = document.getElementById('edit-max').value;
+  const desc  = document.getElementById('edit-desc').value;
+
+  if (title) fd.append('title', title);
+  if (date)  fd.append('date', new Date(date).toISOString());
+  if (city)  fd.append('city', city);
+  if (dept)  fd.append('department', dept);
+  if (max)   fd.append('max_people', max);
+  fd.append('description', desc);
+  if (deleteImageIds.size) fd.append('delete_image_ids', [...deleteImageIds].join(','));
+  for (const f of document.getElementById('edit-images').files) fd.append('images', f);
+
+  try {
+    await apiFetch(`/events/${editEventId}`, { method:'PATCH', body:fd });
+    showAlert(alertBox, 'Soirée mise à jour.', 'success');
+    document.getElementById('edit-images').value = '';
+    deleteImageIds = new Set();
+    await loadEvents();
+    // Ré-ouvrir avec données fraîches
+    openEdit(editEventId);
+  } catch(err) { showAlert(alertBox, err.message); }
+  finally { btn.disabled=false; btn.textContent='Enregistrer'; }
+});
+
+document.getElementById('addRecapBtn').addEventListener('click', async () => {
   const alertBox = document.getElementById('recapAlert');
   clearAlert(alertBox);
-  const evId = document.getElementById('recapEventId').value;
-  const files = document.getElementById('recapImages').files;
-  if (!evId)       { showAlert(alertBox, 'Choisis une soirée.'); return; }
-  if (!files.length){ showAlert(alertBox, 'Ajoute au moins une photo.'); return; }
-  const btn = document.getElementById('recapBtn');
-  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Upload...';
+  const files = document.getElementById('edit-recap-images').files;
+  if (!files.length) { showAlert(alertBox, 'Choisis au moins un fichier.'); return; }
+  const btn = document.getElementById('addRecapBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
   const fd = new FormData();
   for (const f of files) fd.append('images', f);
   try {
-    await apiFetch(`/events/${evId}/recap-images`, { method:'POST', body:fd });
-    showAlert(alertBox, 'Photos ajoutées, la mémoire est là.', 'success');
-    document.getElementById('recapImages').value='';
-    loadEvents();
+    await apiFetch(`/events/${editEventId}/recap-images`, { method:'POST', body:fd });
+    showAlert(alertBox, 'Photos ajoutées.', 'success');
+    document.getElementById('edit-recap-images').value = '';
+    await loadEvents();
+    openEdit(editEventId);
   } catch(err) { showAlert(alertBox, err.message); }
-  finally { btn.disabled=false; btn.textContent='Ajouter les photos'; }
+  finally { btn.disabled=false; btn.textContent='Ajouter'; }
 });
 
 // ══════════════════════════════════════════════════════════
 //  FORMULES
 // ══════════════════════════════════════════════════════════
 let formulas = [];
+let formulaStats = {};
+
+document.getElementById('statsEventSel').addEventListener('change', async function() {
+  if (!this.value) { formulaStats = {}; renderFormulas(); return; }
+  try {
+    const stats = await apiFetch(`/admin/formulas/stats?event_id=${this.value}`);
+    formulaStats = {};
+    stats.forEach(s => { formulaStats[s.id] = s; });
+    renderFormulas();
+  } catch(err) { console.error(err); }
+});
 
 async function loadFormulas() {
   try {
-    formulas = await apiFetch('/formulas');
+    const result = await apiFetch('/formulas');
+    formulas = Array.isArray(result) ? result : [];
     renderFormulas();
   } catch(err) {
-    document.getElementById('formulasAdmin').innerHTML = `<div class="text-smoke">${err.message}</div>`;
+    document.getElementById('formulasAdmin').innerHTML = `<div class="label">${err.message}</div>`;
   }
 }
 
 function renderFormulas() {
   const container = document.getElementById('formulasAdmin');
-  document.getElementById('formulaCount').textContent = `${formulas.length} formule${formulas.length > 1 ? 's' : ''}`;
+  document.getElementById('newFormulaWrap').innerHTML = '';
 
-  container.innerHTML = formulas.map(f => `
+  container.innerHTML = formulas.map(f => {
+    const st = formulaStats[f.id];
+    const count = st ? st.reservations_count : null;
+    const maxR  = f.max_reservations || 0;
+    let badge = '';
+    let barHtml = '';
+    if (count !== null && maxR > 0) {
+      const pct = Math.min(100, Math.round(count/maxR*100));
+      const cls = pct >= 100 ? 'full' : pct >= 80 ? 'warn' : 'ok';
+      badge = `<span class="f-card-badge ${cls}">${count}/${maxR}</span>`;
+      barHtml = `<div class="stat-bar"><div class="stat-bar-fill ${pct>=100?'full':''}" style="width:${pct}%"></div></div>`;
+    } else if (count !== null) {
+      badge = `<span class="f-card-badge ok">${count} résa</span>`;
+    }
+
+    return `
     <div class="f-card" id="fcard-${f.id}">
       <div class="f-card-head" onclick="toggleCard(${f.id})">
-        <span class="f-card-pos">#${f.id}</span>
-        <span class="f-card-name">${esc(f.name)}</span>
-        ${f.max_guests > 0
-          ? `<span class="f-card-guests">+${f.max_guests} invité${f.max_guests>1?'s':''}</span>`
-          : ''}
+        <span class="f-card-num">#${f.id}</span>
+        <span class="f-card-name">${esc(f.name)}${f.is_girls_only ? ' <span style="color:var(--pink);font-size:11px;">♀</span>' : ''}</span>
+        ${badge}
         <span class="f-card-price">${euros(f.price_cents)}</span>
         <span class="f-card-chevron">▶</span>
       </div>
+      ${barHtml ? `<div style="padding:0 18px 10px;">${barHtml}</div>` : ''}
       <div class="f-card-body">
         <div class="f-body-grid">
+          <div class="field"><label>Nom</label><input type="text" id="f-name-${f.id}" value="${esc(f.name)}" maxlength="120"></div>
           <div class="field">
-            <label>Nom</label>
-            <input type="text" id="f-name-${f.id}" value="${esc(f.name)}" maxlength="120">
-          </div>
-          <div class="field">
-            <label>Prix en centimes</label>
+            <label>Prix (centimes)</label>
             <input type="number" id="f-price-${f.id}" value="${f.price_cents}" min="0"
-              oninput="document.getElementById('f-price-hint-${f.id}').textContent=euros(this.value)">
-            <div class="price-hint" id="f-price-hint-${f.id}">${euros(f.price_cents)}</div>
+              oninput="document.getElementById('f-hint-${f.id}').textContent=euros(this.value)">
+            <div class="price-hint" id="f-hint-${f.id}">${euros(f.price_cents)}</div>
           </div>
+          <div class="field"><label>Invités max</label><input type="number" id="f-guests-${f.id}" value="${f.max_guests||0}" min="0" max="99"></div>
           <div class="field">
-            <label>Invités max <span style="color:var(--smoke);font-size:0.72rem;">(0 = pas d'invitations)</span></label>
-            <input type="number" id="f-guests-${f.id}" value="${f.max_guests}" min="0" max="99">
-          </div>
-          <div class="field">
-            <label>Réservations max <span style="color:var(--smoke);font-size:0.72rem;">(0 = illimité)</span></label>
+            <label>Réservations max <span style="color:var(--muted);font-size:11px;">(0 = illimité)</span></label>
             <input type="number" id="f-maxresa-${f.id}" value="${f.max_reservations||0}" min="0">
           </div>
           <div class="field">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-              <input type="checkbox" id="f-girls-${f.id}" ${f.is_girls_only ? 'checked' : ''} style="width:16px;height:16px;accent-color:#e91e8c;flex-shrink:0;">
-              <span style="color:#ff69b4;font-size:0.8rem;">Formule filles uniquement (gratuite, invisible pour les hommes)</span>
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;flex-direction:row;">
+              <input type="checkbox" id="f-girls-${f.id}" ${f.is_girls_only?'checked':''} style="width:15px;height:15px;accent-color:var(--pink);flex-shrink:0;">
+              <span style="color:var(--pink);font-size:12px;">Formule filles uniquement</span>
             </label>
           </div>
-          <div class="field f-desc-field">
-            <label>Description</label>
-            <textarea id="f-desc-${f.id}" style="min-height:80px;">${esc(f.description||'')}</textarea>
-          </div>
+          <div class="field f-desc-field"><label>Description</label><textarea id="f-desc-${f.id}" style="min-height:70px;">${esc(f.description||'')}</textarea></div>
         </div>
         <div class="f-actions">
-          <button class="btn btn-gold" style="padding:11px 20px;font-size:0.85rem;" onclick="saveFormula(${f.id}, this)">
-            Enregistrer
-          </button>
-          <button class="btn btn-ghost" style="padding:11px 16px;font-size:0.85rem;" onclick="toggleCard(${f.id})">
-            Annuler
-          </button>
-          <button class="btn btn-red" style="padding:11px 16px;font-size:0.85rem;margin-left:auto;" onclick="deleteFormula(${f.id}, this)">
-            Supprimer
-          </button>
+          <button class="btn btn-gold" style="padding:9px 16px;font-size:12px;" onclick="saveFormula(${f.id}, this)">Enregistrer</button>
+          <button class="btn btn-ghost" style="padding:9px 14px;font-size:12px;" onclick="toggleCard(${f.id})">Annuler</button>
+          <button class="btn btn-red"  style="padding:9px 14px;font-size:12px;margin-left:auto;" onclick="deleteFormula(${f.id}, this)">Supprimer</button>
         </div>
         <div id="f-alert-${f.id}" style="margin-top:8px;"></div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   // Bouton ajouter
-  document.getElementById('newFormulaWrap').innerHTML = '';
   const addBtn = document.createElement('button');
   addBtn.className = 'add-formula-btn';
-  addBtn.innerHTML = '＋ Ajouter une formule';
+  addBtn.innerHTML = '＋ Nouvelle formule';
   addBtn.addEventListener('click', showNewFormulaForm);
   document.getElementById('newFormulaWrap').appendChild(addBtn);
 }
@@ -361,173 +630,196 @@ function renderFormulas() {
 function toggleCard(id) {
   const card = document.getElementById(`fcard-${id}`);
   const wasOpen = card.classList.contains('open');
-  // Ferme tous
-  document.querySelectorAll('.f-card').forEach(c => c.classList.remove('open', 'editing'));
-  if (!wasOpen) {
-    card.classList.add('open', 'editing');
-    card.querySelector('.f-card-body').style.display = 'block';
-  }
+  document.querySelectorAll('.f-card').forEach(c => c.classList.remove('open'));
+  if (!wasOpen) card.classList.add('open');
 }
 
 async function saveFormula(id, btn) {
   const alertBox = document.getElementById(`f-alert-${id}`);
   clearAlert(alertBox);
-  const name  = document.getElementById(`f-name-${id}`).value.trim();
-  const price = parseInt(document.getElementById(`f-price-${id}`).value) || 0;
-  const guests= parseInt(document.getElementById(`f-guests-${id}`).value) || 0;
-  const desc  = document.getElementById(`f-desc-${id}`).value.trim();
-
-  if (!name) { showAlert(alertBox, 'Le nom est obligatoire.'); return; }
-
+  const name = document.getElementById(`f-name-${id}`).value.trim();
+  if (!name) { showAlert(alertBox, 'Nom obligatoire.'); return; }
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
   try {
-    const updated = await apiFetch(`/formulas/${id}`, { method:'PATCH',
-      body: { name, description: desc || null, price_cents: price, max_guests: guests, is_girls_only: document.getElementById(`f-girls-${id}`)?.checked ? 1 : 0, max_reservations: +(document.getElementById(`f-maxresa-${id}`)?.value||0) }
-    });
-    // Mettre à jour le cache
+    const updated = await apiFetch(`/formulas/${id}`, { method:'PATCH', body: {
+      name,
+      description: document.getElementById(`f-desc-${id}`).value.trim() || null,
+      price_cents:      +document.getElementById(`f-price-${id}`).value,
+      max_guests:       +document.getElementById(`f-guests-${id}`).value,
+      max_reservations: +document.getElementById(`f-maxresa-${id}`).value,
+      is_girls_only:    document.getElementById(`f-girls-${id}`)?.checked ? 1 : 0,
+    }});
     const idx = formulas.findIndex(f => f.id === id);
     if (idx !== -1) formulas[idx] = updated;
-    // Fermer et re-render
     renderFormulas();
-    // Flash de confirmation sur la card
-    const card = document.getElementById(`fcard-${id}`);
-    if (card) card.classList.add('saved-flash');
-  } catch(err) {
-    showAlert(alertBox, err.message);
-    btn.disabled = false; btn.textContent = 'Enregistrer';
-  }
+  } catch(err) { showAlert(alertBox, err.message); btn.disabled=false; btn.textContent='Enregistrer'; }
 }
 
 async function deleteFormula(id, btn) {
   const f = formulas.find(x => x.id === id);
-  if (!confirm(`Supprimer la formule "${f?.name}" ? Cette action est irréversible.`)) return;
-  const alertBox = document.getElementById(`f-alert-${id}`);
-  clearAlert(alertBox);
-  btn.disabled = true; btn.textContent = '...';
+  if (!confirm(`Supprimer "${f?.name}" ?`)) return;
+  btn.disabled = true; btn.textContent = '…';
   try {
     await apiFetch(`/formulas/${id}`, { method:'DELETE' });
     formulas = formulas.filter(x => x.id !== id);
     renderFormulas();
-    showAlert(document.getElementById('formulasAlert'), `Formule supprimée.`, 'success');
-  } catch(err) {
-    showAlert(alertBox, err.message);
-    btn.disabled = false; btn.textContent = 'Supprimer';
-  }
+    showAlert(document.getElementById('formulasAlert'), 'Formule supprimée.', 'success');
+  } catch(err) { alert(err.message); btn.disabled=false; btn.textContent='Supprimer'; }
 }
 
 function showNewFormulaForm() {
-  const wrap = document.getElementById('newFormulaWrap');
-  wrap.innerHTML = `
+  document.getElementById('newFormulaWrap').innerHTML = `
     <div class="new-formula-form">
-      <h4>✦ Nouvelle formule</h4>
+      <div style="font-weight:600;font-size:14px;color:var(--bright);margin-bottom:12px;">Nouvelle formule</div>
       <div class="f-body-grid">
+        <div class="field"><label>Nom *</label><input type="text" id="nf-name" maxlength="120" autofocus></div>
         <div class="field">
-          <label>Nom <span style="color:var(--red);">*</span></label>
-          <input type="text" id="nf-name" placeholder="Nom de la formule" maxlength="120" autofocus>
-        </div>
-        <div class="field">
-          <label>Prix en centimes <span style="color:var(--red);">*</span></label>
+          <label>Prix (centimes) *</label>
           <input type="number" id="nf-price" min="0" value="0"
-            oninput="document.getElementById('nf-price-hint').textContent=euros(this.value)">
-          <div class="price-hint" id="nf-price-hint">0 €</div>
+            oninput="document.getElementById('nf-hint').textContent=euros(this.value)">
+          <div class="price-hint" id="nf-hint">0 €</div>
         </div>
+        <div class="field"><label>Invités max</label><input type="number" id="nf-guests" min="0" max="99" value="0"></div>
+        <div class="field"><label>Réservations max <span style="color:var(--muted);font-size:11px;">(0 = illimité)</span></label><input type="number" id="nf-maxresa" min="0" value="0"></div>
         <div class="field">
-          <label>Invités max <span style="color:var(--smoke);font-size:0.72rem;">(0 = aucun)</span></label>
-          <input type="number" id="nf-guests" min="0" max="99" value="0">
-        </div>
-        <div class="field">
-          <label>Réservations max <span style="color:var(--smoke);font-size:0.72rem;">(0 = illimité)</span></label>
-          <input type="number" id="nf-maxresa" min="0" value="0">
-        </div>
-        <div class="field">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-            <input type="checkbox" id="nf-girls" style="width:16px;height:16px;accent-color:#e91e8c;flex-shrink:0;">
-            <span style="color:#ff69b4;font-size:0.8rem;">Formule filles uniquement (gratuite, invisible pour les hommes)</span>
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;flex-direction:row;">
+            <input type="checkbox" id="nf-girls" style="width:15px;height:15px;accent-color:var(--pink);flex-shrink:0;">
+            <span style="color:var(--pink);font-size:12px;">Formule filles uniquement</span>
           </label>
         </div>
-        <div class="field f-desc-field">
-          <label>Description</label>
-          <textarea id="nf-desc" style="min-height:80px;" placeholder="Ce que la formule inclut..."></textarea>
-        </div>
+        <div class="field f-desc-field"><label>Description</label><textarea id="nf-desc" style="min-height:70px;"></textarea></div>
       </div>
-      <div id="nf-alert"></div>
-      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-        <button class="btn btn-gold" id="nf-save">Créer la formule</button>
-        <button class="btn btn-ghost" onclick="renderFormulas()">Annuler</button>
+      <div id="nf-alert" style="margin-top:8px;"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-gold" id="nf-save" style="padding:9px 16px;font-size:12px;">Créer</button>
+        <button class="btn btn-ghost" style="padding:9px 14px;font-size:12px;" onclick="renderFormulas()">Annuler</button>
       </div>
-    </div>
-  `;
+    </div>`;
   document.getElementById('nf-save').addEventListener('click', createFormula);
 }
 
 async function createFormula() {
   const alertBox = document.getElementById('nf-alert');
   clearAlert(alertBox);
-  const name   = document.getElementById('nf-name').value.trim();
-  const price  = parseInt(document.getElementById('nf-price').value) || 0;
-  const guests = parseInt(document.getElementById('nf-guests').value) || 0;
-  const desc   = document.getElementById('nf-desc').value.trim();
-
-  if (!name) { showAlert(alertBox, 'Le nom est obligatoire.'); return; }
-
+  const name = document.getElementById('nf-name').value.trim();
+  if (!name) { showAlert(alertBox, 'Nom obligatoire.'); return; }
   const btn = document.getElementById('nf-save');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Création...';
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
   try {
-    const created = await apiFetch('/formulas', { method:'POST',
-      body: { name, description: desc || null, price_cents: price, max_guests: guests, is_girls_only: document.getElementById('nf-girls')?.checked ? 1 : 0, max_reservations: +(document.getElementById('nf-maxresa')?.value||0) }
-    });
+    const created = await apiFetch('/formulas', { method:'POST', body: {
+      name,
+      description:      document.getElementById('nf-desc').value.trim() || null,
+      price_cents:      +document.getElementById('nf-price').value,
+      max_guests:       +document.getElementById('nf-guests').value,
+      max_reservations: +document.getElementById('nf-maxresa').value,
+      is_girls_only:    document.getElementById('nf-girls')?.checked ? 1 : 0,
+    }});
     formulas.push(created);
     renderFormulas();
-    showAlert(document.getElementById('formulasAlert'),
-      `Formule "${created.name}" créée (${euros(created.price_cents)}).`, 'success');
+    showAlert(document.getElementById('formulasAlert'), `Formule "${created.name}" créée.`, 'success');
+  } catch(err) { showAlert(alertBox, err.message); btn.disabled=false; btn.textContent='Créer'; }
+}
+
+// ══════════════════════════════════════════════════════════
+//  RÉSERVATIONS
+// ══════════════════════════════════════════════════════════
+async function loadReservations() {
+  const eventId = document.getElementById('resaEventFilter').value;
+  const status  = document.getElementById('resaStatusFilter').value;
+  const tbody   = document.getElementById('resaTableBody');
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--sub);padding:20px;"><span class="spinner"></span></td></tr>';
+
+  try {
+    let url = '/admin/reservations?';
+    if (eventId) url += `event_id=${eventId}&`;
+    if (status)  url += `status=${status}&`;
+    const resas = await apiFetch(url);
+    const arr   = Array.isArray(resas) ? resas : [];
+    document.getElementById('resaCount').textContent = `${arr.length} réservation${arr.length > 1 ? 's' : ''}`;
+
+    if (!arr.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--sub);padding:20px;">Aucune réservation.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = arr.map(r => `
+      <tr>
+        <td style="color:var(--muted);font-size:12px;">#${r.id}</td>
+        <td>
+          <div style="font-weight:600;color:var(--bright);">${esc(r.holder_first_name||'')} ${esc(r.holder_last_name||'')}</div>
+          <div style="font-size:12px;color:var(--sub);">${esc(r.holder_email||'')} · ${r.holder_gender||''}</div>
+        </td>
+        <td>
+          <div style="font-weight:500;">${esc(r.event_title||'')}</div>
+          <div style="font-size:12px;color:var(--sub);">${r.event_date ? new Date(r.event_date).toLocaleDateString('fr-FR') : ''}</div>
+        </td>
+        <td style="color:var(--text);">${esc(r.formula_name||'')}</td>
+        <td><span class="status-pill ${r.status}">${r.status}</span></td>
+        <td style="color:var(--accent);font-weight:600;">${r.amount_paid_cents ? euros(r.amount_paid_cents) : '—'}</td>
+        <td style="font-size:12px;color:var(--sub);white-space:nowrap;">${fmtDate(r.created_at)}</td>
+        <td>${r.qr_token ? `<button class="qr-btn" onclick="openQr(${r.id})">QR</button>` : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
+      </tr>`).join('');
   } catch(err) {
-    showAlert(alertBox, err.message);
-    btn.disabled = false; btn.textContent = 'Créer la formule';
+    tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger);padding:16px;">${err.message}</td></tr>`;
   }
 }
 
-// ── UTILISATEURS & SCANNERS ───────────────────────────────
+// ── QR Modal ─────────────────────────────────────────────
+const qrModal = document.getElementById('qrModal');
+document.getElementById('qrClose').addEventListener('click', () => qrModal.classList.remove('open'));
+qrModal.addEventListener('click', e => { if (e.target === qrModal) qrModal.classList.remove('open'); });
+
+async function openQr(resaId) {
+  const content = document.getElementById('qrContent');
+  content.innerHTML = '<div class="ticket" style="padding:32px;text-align:center;"><span class="spinner"></span></div>';
+  qrModal.classList.add('open');
+  try {
+    const data = await apiFetch(`/admin/reservations/${resaId}/qr`);
+    renderQrTicket(content, data, false);
+  } catch(err) {
+    content.innerHTML = `<div class="alert">${err.message}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  UTILISATEURS
+// ══════════════════════════════════════════════════════════
 let allUsers = [];
 
 async function loadUsers() {
-  const container = document.getElementById('usersAdmin');
   try {
     allUsers = await apiFetch('/admin/users');
     renderUsers(allUsers);
   } catch(err) {
-    container.innerHTML = `<div class="text-smoke">${err.message}</div>`;
+    document.getElementById('usersAdmin').innerHTML = `<div class="label">${err.message}</div>`;
   }
 }
 
-document.getElementById('userSearch').addEventListener('input', e => {
-  const q = e.target.value.toLowerCase();
+function filterUsers(q) {
+  const low = q.toLowerCase();
   renderUsers(q ? allUsers.filter(u =>
-    `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(q)) : allUsers);
-});
+    `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(low)) : allUsers);
+}
 
 function renderUsers(users) {
-  const container = document.getElementById('usersAdmin');
-  if (!users.length) {
-    container.innerHTML = '<div class="text-smoke" style="padding:12px 0;">Aucun résultat.</div>';
-    return;
-  }
-  container.innerHTML = users.map(u => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--line);gap:12px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <div style="color:var(--white);font-weight:600;">${esc(u.first_name)} ${esc(u.last_name)}</div>
-        <div style="color:var(--smoke);font-size:0.82rem;">${esc(u.email)} · ${esc(u.social||'—')}</div>
-        <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;">
+  const c = document.getElementById('usersAdmin');
+  if (!users.length) { c.innerHTML = '<div class="label">Aucun résultat.</div>'; return; }
+  c.innerHTML = users.map(u => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid var(--border);gap:10px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:180px;">
+        <div style="font-weight:600;color:var(--bright);">${esc(u.first_name)} ${esc(u.last_name)} <span style="color:var(--sub);font-size:12px;">${u.gender||''}</span></div>
+        <div style="font-size:12px;color:var(--sub);">${esc(u.email)} · ${esc(u.social||'—')}</div>
+        <div style="display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;">
           ${u.is_admin   ? '<span class="tag tag-gold">Admin</span>'   : ''}
           ${u.is_scanner ? '<span class="tag tag-lime">Scanner</span>' : ''}
         </div>
       </div>
-      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:0.85rem;color:${u.is_scanner ? 'var(--lime)' : 'var(--smoke)'};">
-        <input type="checkbox" ${u.is_scanner ? 'checked' : ''} onchange="toggleScanner(${u.id}, this.checked, this)"
-          style="width:16px;height:16px;cursor:pointer;accent-color:var(--lime);">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;color:${u.is_scanner?'#8c8':'var(--sub)'};">
+        <input type="checkbox" ${u.is_scanner?'checked':''} onchange="toggleScanner(${u.id}, this.checked, this)"
+          style="width:15px;height:15px;cursor:pointer;accent-color:#6a9;">
         Scanner
       </label>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 async function toggleScanner(uid, val, cb) {
@@ -536,71 +828,13 @@ async function toggleScanner(uid, val, cb) {
     await apiFetch(`/admin/users/${uid}/scanner?is_scanner=${val}`, { method:'PATCH' });
     const u = allUsers.find(x => x.id === uid);
     if (u) u.is_scanner = val ? 1 : 0;
-    const q = document.getElementById('userSearch').value.toLowerCase();
-    renderUsers(q ? allUsers.filter(u2 => `${u2.first_name} ${u2.last_name} ${u2.email}`.toLowerCase().includes(q)) : allUsers);
+    renderUsers(allUsers);
   } catch(err) { alert(err.message); cb.checked = !val; cb.disabled = false; }
 }
 
-// ── SOIRÉES ───────────────────────────────────────────────
-async function loadEvents() {
-  const container = document.getElementById('eventsAdmin');
-  const recapSel  = document.getElementById('recapEventId');
-  try {
-    const [upcoming, past] = await Promise.all([
-      apiFetch('/events?upcoming_only=false'),
-      apiFetch('/events/past'),
-    ]);
-    const all = [...upcoming, ...past].reduce((acc, e) =>
-      acc.find(x => x.id === e.id) ? acc : [...acc, e], []);
-
-    recapSel.innerHTML = '<option value="">Choisir...</option>' +
-      all.map(e => `<option value="${e.id}">${esc(e.title)} (${new Date(e.date).toLocaleDateString('fr-FR')})</option>`).join('');
-
-    if (!all.length) { container.innerHTML = '<div class="text-smoke">Aucune soirée.</div>'; return; }
-
-    container.innerHTML = all.map(ev => `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:14px 0;border-top:1px solid var(--line);gap:14px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:220px;">
-          <div class="mono text-smoke">${formatDate(ev.date)} · ${ev.department}</div>
-          <div style="font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--white);">${esc(ev.title)}</div>
-          <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
-            <span class="tag">${ev.seats_taken}/${ev.max_people} places</span>
-            <span class="tag ${ev.is_past ? 'tag-red' : 'tag-gold'}">${ev.is_past ? 'PASSÉE' : 'À VENIR'}</span>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <a href="event.html?id=${ev.id}" class="btn btn-ghost" style="padding:9px 14px;font-size:0.8rem;">Voir</a>
-          <button class="btn btn-ghost toggle-past" data-id="${ev.id}" data-past="${ev.is_past}" style="padding:9px 14px;font-size:0.8rem;">
-            ${ev.is_past ? 'Remettre à venir' : 'Marquer passée'}
-          </button>
-          <button class="btn btn-red del-btn" data-id="${ev.id}" style="padding:9px 14px;font-size:0.8rem;">Suppr.</button>
-        </div>
-      </div>`).join('');
-
-    container.querySelectorAll('.del-btn').forEach(b => {
-      b.addEventListener('click', async () => {
-        if (!confirm('Supprimer cette soirée ?')) return;
-        try { await apiFetch(`/events/${b.dataset.id}`, { method:'DELETE' }); loadEvents(); }
-        catch(err) { alert(err.message); }
-      });
-    });
-
-    container.querySelectorAll('.toggle-past').forEach(b => {
-      b.addEventListener('click', async () => {
-        const past = b.dataset.past === 'true' || b.dataset.past === '1';
-        try { await apiFetch(`/events/${b.dataset.id}/mark-past?is_past=${!past}`, { method:'PATCH' }); loadEvents(); }
-        catch(err) { alert(err.message); }
-      });
-    });
-  } catch(err) {
-    container.innerHTML = `<div class="text-smoke">${err.message}</div>`;
-  }
-}
-
 // ── Boot ──────────────────────────────────────────────────
+loadEvents();
 loadFormulas();
 loadUsers();
-loadEvents();
 </script>
-<div id="footer"></div>
 </body></html>
