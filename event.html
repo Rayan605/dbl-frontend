@@ -25,12 +25,12 @@ let selectedFormuleFree = false;
 async function load() {
   const pc = document.getElementById('pageContent');
   try {
-    const [ev, formulas] = await Promise.all([apiFetch(`/events/${eventId}`), apiFetch('/formulas')]);
-    render(ev, formulas);
+    const [ev, formulas, avail] = await Promise.all([apiFetch(`/events/${eventId}`), apiFetch('/formulas'), apiFetch(`/events/${eventId}/formula-availability`)]);
+    render(ev, formulas, avail);
   } catch(err) { pc.innerHTML = `<div class="empty-state">Erreur : ${err.message}</div>`; }
 }
 
-function render(ev, formulas) {
+function render(ev, formulas, avail) {
   const full = ev.seats_left <= 0;
   const resaClosed = ev.reservations_open === 0;
   const urgent = !full && !resaClosed && ev.seats_left <= 10;
@@ -73,20 +73,43 @@ function render(ev, formulas) {
       </div>
 
       <div class="formulas-grid" id="formulasList">
-        ${formulas.map(f => {
-          const isFree = f.price_cents === 0;
-          const userGender = auth.user ? auth.user.gender : null;
-          // Formule à 0€ : visible mais grisée pour les non-filles
-          const unavailFree = isFree && userGender !== 'F';
+        ${formulas.filter(f => {
+          if (f.is_girls_only) {
+            const g = auth.user ? auth.user.gender : null;
+            return g === 'F';
+          }
+          return true;
+        }).map(f => {
+          const isGirls = f.is_girls_only === 1 || f.is_girls_only === true;
+          const a = avail[String(f.id)] || {};
+          const spotsLeft = a.spots_left;
+          const isFull = spotsLeft !== null && spotsLeft !== undefined && spotsLeft <= 0;
+          let spotsHtml = '';
+          if (spotsLeft !== null && spotsLeft !== undefined) {
+            if (isFull) {
+              spotsHtml = '<div style="color:var(--danger);font-size:11px;font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:0.04em;">Complet</div>';
+            } else if (spotsLeft <= 5) {
+              spotsHtml = `<div style="color:var(--accent);font-size:11px;font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:0.04em;">${spotsLeft} place${spotsLeft>1?'s':''} restante${spotsLeft>1?'s':''}</div>`;
+            } else {
+              spotsHtml = `<div style="color:var(--sub);font-size:11px;margin-top:4px;">${spotsLeft} places restantes</div>`;
+            }
+          }
           return `
-            <div class="formula-card${unavailFree ? ' formula-unavail' : ''}" data-id="${f.id}" data-price="${f.price_cents}" data-free="${isFree}">
+            <div class="formula-card${isGirls?' formula-girls':''}${isFull?' formula-unavail':''}" data-id="${f.id}" data-price="${f.price_cents}" data-girls="${isGirls}">
               <div class="formula-left">
-                <div class="formula-name">${f.name}${isFree ? ' <span style="background:#ff69b4;color:#fff;font-size:0.55rem;padding:2px 7px;border-radius:2px;vertical-align:middle;font-family:Space Mono,monospace;letter-spacing:0.06em;">GRATUIT FILLES</span>' : ''}</div>
-                <div class="formula-desc">${f.description || ''}${isFree ? '<br><span style="color:#ff69b4;font-size:0.8rem;">✦ Entrée gratuite pour les filles</span>' : ''}</div>
+                <div class="formula-name">
+                  ${f.name}
+                  ${isGirls ? '<span style="background:var(--pink);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;font-weight:600;letter-spacing:0.04em;">♀ FILLES</span>' : ''}
+                </div>
+                <div class="formula-desc">
+                  ${f.description || ''}
+                  ${isGirls ? '<br><span style="color:var(--pink);font-size:13px;font-weight:600;">Entrée gratuite — réservé aux filles</span>' : ''}
+                </div>
                 ${f.max_guests > 0 ? `<div class="formula-guests">✦ Tu peux inviter jusqu'à ${f.max_guests} personne${f.max_guests > 1 ? 's' : ''}</div>` : ''}
+                ${spotsHtml}
               </div>
               <div class="formula-right">
-                <div class="formula-price" style="${isFree ? 'color:#ff69b4;' : ''}">${isFree ? 'GRATUIT' : formatPrice(f.price_cents)}</div>
+                <div class="formula-price" style="${isGirls?'color:var(--pink);':''}">${isGirls?'GRATUIT':formatPrice(f.price_cents)}</div>
                 <div class="formula-check">✓</div>
               </div>
             </div>`;
@@ -121,7 +144,7 @@ function render(ev, formulas) {
       document.querySelectorAll('.formula-card').forEach(x => x.classList.remove('selected'));
       el.classList.add('selected');
       selectedFormulaId = +el.dataset.id;
-      selectedFormuleFree = el.dataset.free === 'true';
+      selectedFormuleFree = el.dataset.girls === 'true';
     });
   });
 
