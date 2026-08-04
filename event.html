@@ -40,9 +40,14 @@ function render(ev, formulas, avail) {
     <section class="event-hero-grid">
       <div class="fade-up">
         ${ev.images.length
-          ? `<img class="gallery-main" id="mainImg" src="${ev.images[0].url}" alt="${ev.title}">
+          ? `${ev.images[0].media_type === 'video'
+               ? `<video class="gallery-main" id="mainImg" src="${ev.images[0].url}" controls playsinline preload="metadata"></video>`
+               : `<img class="gallery-main" id="mainImg" src="${ev.images[0].url}" alt="${ev.title}">`}
              ${ev.images.length > 1 ? `<div class="gallery-thumbs">${ev.images.map((img, i) =>
-               `<img class="gallery-thumb ${i===0?'active':''}" data-idx="${i}" src="${img.url}">`).join('')}</div>` : ''}`
+               img.media_type === 'video'
+                 ? `<video class="gallery-thumb ${i===0?'active':''}" data-idx="${i}" data-type="video" src="${img.url}" muted preload="metadata"></video>`
+                 : `<img class="gallery-thumb ${i===0?'active':''}" data-idx="${i}" data-type="image" src="${img.url}">`
+             ).join('')}</div>` : ''}`
           : `<div class="gallery-main" style="display:flex;align-items:center;justify-content:center;color:var(--ghost);font-family:'Playfair Display',serif;font-style:italic;font-size:2rem;">Liste Party</div>`
         }
       </div>
@@ -131,7 +136,25 @@ function render(ev, formulas, avail) {
   // Galerie
   document.querySelectorAll('.gallery-thumb').forEach(t => {
     t.addEventListener('click', () => {
-      document.getElementById('mainImg').src = ev.images[+t.dataset.idx].url;
+      const img = ev.images[+t.dataset.idx];
+      const mainEl = document.getElementById('mainImg');
+      if (img.media_type === 'video') {
+        const video = document.createElement('video');
+        video.className = 'gallery-main';
+        video.id = 'mainImg';
+        video.src = img.url;
+        video.controls = true;
+        video.playsInline = true;
+        video.preload = 'metadata';
+        mainEl.replaceWith(video);
+      } else {
+        const imageEl = document.createElement('img');
+        imageEl.className = 'gallery-main';
+        imageEl.id = 'mainImg';
+        imageEl.src = img.url;
+        imageEl.alt = ev.title;
+        mainEl.replaceWith(imageEl);
+      }
       document.querySelectorAll('.gallery-thumb').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
     });
