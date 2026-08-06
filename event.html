@@ -31,9 +31,7 @@ async function load() {
 }
 
 function render(ev, formulas, avail) {
-  const full = ev.seats_left <= 0;
   const resaClosed = ev.reservations_open === 0;
-  const urgent = !full && !resaClosed && ev.seats_left <= 10;
   document.title = `${ev.title} — Liste Party`;
   const pc = document.getElementById('pageContent');
   pc.innerHTML = `
@@ -59,12 +57,6 @@ function render(ev, formulas, avail) {
           <div class="meta-item"><div class="mono">Date</div><div class="meta-val">${formatDate(ev.date)}</div></div>
           <div class="meta-item"><div class="mono">Heure</div><div class="meta-val">${formatTime(ev.date)}</div></div>
           <div class="meta-item"><div class="mono">Lieu</div><div class="meta-val">${ev.city}</div></div>
-          <div class="meta-item">
-            <div class="mono">Places</div>
-            <div class="meta-val ${full ? 'urgent' : ''}">
-              ${full ? 'COMPLET' : urgent ? `🔥 ${ev.seats_left} restantes` : `${ev.seats_left} / ${ev.max_people}`}
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -89,32 +81,22 @@ function render(ev, formulas, avail) {
           const a = avail[String(f.id)] || {};
           const spotsLeft = a.spots_left;
           const isFull = spotsLeft !== null && spotsLeft !== undefined && spotsLeft <= 0;
-          let spotsHtml = '';
-          if (spotsLeft !== null && spotsLeft !== undefined) {
-            if (isFull) {
-              spotsHtml = '<div style="color:var(--danger);font-size:11px;font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:0.04em;">Complet</div>';
-            } else if (spotsLeft <= 5) {
-              spotsHtml = `<div style="color:var(--accent);font-size:11px;font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:0.04em;">${spotsLeft} place${spotsLeft>1?'s':''} restante${spotsLeft>1?'s':''}</div>`;
-            } else {
-              spotsHtml = `<div style="color:var(--sub);font-size:11px;margin-top:4px;">${spotsLeft} places restantes</div>`;
-            }
-          }
           return `
             <div class="formula-card${isGirls?' formula-girls':''}${isFull?' formula-unavail':''}" data-id="${f.id}" data-price="${f.price_cents}" data-girls="${isGirls}">
               <div class="formula-left">
-                <div class="formula-name">
+                <div class="formula-name" style="${isFull ? 'text-decoration:line-through;opacity:0.55;' : ''}">
                   ${f.name}
                   ${isGirls ? '<span style="background:var(--pink);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;font-weight:600;letter-spacing:0.04em;">♀ FILLES</span>' : ''}
+                  ${isFull ? '<span style="background:var(--danger);color:#fff;font-size:10px;padding:2px 8px;border-radius:2px;margin-left:6px;vertical-align:middle;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;">Épuisé</span>' : ''}
                 </div>
-                <div class="formula-desc">
+                <div class="formula-desc" style="${isFull ? 'opacity:0.55;' : ''}">
                   ${f.description || ''}
                   ${isGirls ? '<br><span style="color:var(--pink);font-size:13px;font-weight:600;">Entrée gratuite — réservé aux filles</span>' : ''}
                 </div>
-                ${f.max_guests > 0 ? `<div class="formula-guests">✦ Tu peux inviter jusqu'à ${f.max_guests} personne${f.max_guests > 1 ? 's' : ''}</div>` : ''}
-                ${spotsHtml}
+                ${f.max_guests > 0 ? `<div class="formula-guests" style="${isFull ? 'opacity:0.55;' : ''}">✦ Tu peux inviter jusqu'à ${f.max_guests} personne${f.max_guests > 1 ? 's' : ''}</div>` : ''}
               </div>
               <div class="formula-right">
-                <div class="formula-price" style="${isGirls?'color:var(--pink);':''}">${isGirls?'GRATUIT':formatPrice(f.price_cents)}</div>
+                <div class="formula-price" style="${isGirls?'color:var(--pink);':''}${isFull ? 'text-decoration:line-through;opacity:0.55;' : ''}">${isGirls?'GRATUIT':formatPrice(f.price_cents)}</div>
                 <div class="formula-check">✓</div>
               </div>
             </div>`;
@@ -124,8 +106,8 @@ function render(ev, formulas, avail) {
       <div id="resAlert" style="margin-top:16px;"></div>
 
       ${resaClosed ? '<div class="alert info" style="text-align:center;font-weight:600;">🔒 Réservations fermées pour cette soirée.</div>' : `
-      <button id="reserveBtn" class="btn btn-gold btn-block btn-lg" ${full ? 'disabled' : ''} style="margin-top:16px;">
-        ${full ? 'Soirée complète' : 'Réserver et payer →'}
+      <button id="reserveBtn" class="btn btn-gold btn-block btn-lg" style="margin-top:16px;">
+        Réserver et payer →
       </button>`}
       <p class="mono text-smoke text-center mt-2" style="font-size:0.65rem;">
         1 place par personne · Paiement 100% sécurisé · Stripe · CB acceptées
