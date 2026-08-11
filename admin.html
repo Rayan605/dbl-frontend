@@ -141,6 +141,7 @@
     <button class="tab-btn" onclick="switchTab('formules')">Formules</button>
     <button class="tab-btn" onclick="switchTab('reservations')">Réservations</button>
     <button class="tab-btn" onclick="switchTab('users')">Utilisateurs</button>
+    <button class="tab-btn" onclick="switchTab('notifs')">Notifications</button>
   </div>
 
   <!-- ═══════════ TAB : SOIRÉES ═══════════ -->
@@ -281,6 +282,30 @@
     </div>
   </div>
 
+  <div id="tab-notifs" class="tab-pane">
+    <div class="admin-block">
+      <div class="admin-block-title">Envoyer une notification</div>
+      <div id="notifAlert"></div>
+      <div style="max-width:560px;">
+        <input type="text" id="notifTitle" maxlength="120"
+          placeholder="Titre — ex : Nouvelle soirée à Lyon 🔥"
+          style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--text);font-family:inherit;font-size:13px;margin-bottom:10px;">
+        <textarea id="notifBody" rows="3" maxlength="500"
+          placeholder="Message — ex : Réservations ouvertes pour le 12 juillet, places limitées."
+          style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--text);font-family:inherit;font-size:13px;margin-bottom:10px;resize:vertical;"></textarea>
+        <select id="notifEvent"
+          style="width:100%;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--text);font-family:inherit;font-size:13px;margin-bottom:12px;">
+          <option value="">— Lier à une soirée (optionnel) —</option>
+        </select>
+        <button class="btn btn-gold" id="notifSend" onclick="sendNotif()">Envoyer la notification</button>
+      </div>
+    </div>
+    <div class="admin-block">
+      <div class="admin-block-title">Notifications envoyées</div>
+      <div id="notifList"></div>
+    </div>
+  </div>
+
 </section>
 
 <!-- QR Modal -->
@@ -322,6 +347,7 @@ function switchTab(name) {
   document.getElementById('tab-' + name).classList.add('active');
   document.querySelector(`.tab-btn[onclick="switchTab('${name}')"]`).classList.add('active');
   if (name === 'reservations') loadReservations();
+  if (name === 'notifs') loadNotifs();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -830,6 +856,74 @@ async function toggleScanner(uid, val, cb) {
     if (u) u.is_scanner = val ? 1 : 0;
     renderUsers(allUsers);
   } catch(err) { alert(err.message); cb.checked = !val; cb.disabled = false; }
+}
+
+// ══════════════════════════════════════════════════════════
+//  NOTIFICATIONS
+// ══════════════════════════════════════════════════════════
+let notifEventsLoaded = false;
+
+async function loadNotifs() {
+  // Pré-remplit le sélecteur de soirées (une seule fois)
+  if (!notifEventsLoaded) {
+    try {
+      const evs = await apiFetch('/events?upcoming_only=false');
+      const sel = document.getElementById('notifEvent');
+      (Array.isArray(evs) ? evs : []).forEach(ev => {
+        const o = document.createElement('option');
+        o.value = ev.id;
+        o.textContent = `${ev.title} — ${ev.city}`;
+        sel.appendChild(o);
+      });
+      notifEventsLoaded = true;
+    } catch (e) { /* silencieux */ }
+  }
+  try {
+    const list = await apiFetch('/notifications');
+    const el = document.getElementById('notifList');
+    if (!list.length) { el.innerHTML = '<div class="label">Aucune notification envoyée.</div>'; return; }
+    el.innerHTML = list.map(n => `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:11px 0;border-top:1px solid var(--border);gap:10px;">
+        <div style="flex:1;">
+          <div style="font-weight:600;color:var(--bright);">${esc(n.title)}</div>
+          <div style="font-size:13px;color:var(--sub);margin-top:2px;">${esc(n.body)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">${fmtDate(n.created_at)}</div>
+        </div>
+        <button class="btn" style="background:var(--danger,#D94F4F);color:#fff;" onclick="delNotif(${n.id})">Suppr.</button>
+      </div>`).join('');
+  } catch (e) { /* silencieux */ }
+}
+
+async function sendNotif() {
+  const alertBox = document.getElementById('notifAlert');
+  clearAlert(alertBox);
+  const title = document.getElementById('notifTitle').value.trim();
+  const body  = document.getElementById('notifBody').value.trim();
+  const evId  = document.getElementById('notifEvent').value;
+  if (!title || !body) { showAlert(alertBox, 'Titre et message sont obligatoires.'); return; }
+  const btn = document.getElementById('notifSend');
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  try {
+    await apiFetch('/admin/notifications', {
+      method: 'POST',
+      body: { title, body, event_id: evId ? +evId : null },
+    });
+    document.getElementById('notifTitle').value = '';
+    document.getElementById('notifBody').value = '';
+    document.getElementById('notifEvent').value = '';
+    showAlert(alertBox, 'Notification envoyée.', 'success');
+    loadNotifs();
+  } catch (err) {
+    showAlert(alertBox, err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Envoyer la notification';
+  }
+}
+
+async function delNotif(id) {
+  if (!confirm('Supprimer cette notification ?')) return;
+  try { await apiFetch('/admin/notifications/' + id, { method: 'DELETE' }); loadNotifs(); }
+  catch (err) { showAlert(document.getElementById('notifAlert'), err.message); }
 }
 
 // ── Boot ──────────────────────────────────────────────────
