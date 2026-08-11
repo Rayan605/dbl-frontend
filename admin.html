@@ -594,8 +594,7 @@ function eventCheckboxes(f) {
   const assigned = new Set(f.event_ids || []);
   return allEvents.map(ev => `
     <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text);white-space:nowrap;">
-      <input type="checkbox" value="${ev.id}" ${assigned.has(ev.id) ? 'checked' : ''}
-        style="width:14px;height:14px;accent-color:var(--accent);flex-shrink:0;">
+      <input type="checkbox" value="${ev.id}" ${assigned.has(ev.id) ? 'checked' : ''}>
       <span>${esc(ev.title)}${ev.is_past ? ' <span style="color:var(--muted);">(passée)</span>' : ''}</span>
     </label>`).join('');
 }
