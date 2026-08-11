@@ -397,6 +397,9 @@ async function loadEvents() {
       allEvents.map(e => `<option value="${e.id}">${esc(e.title)}</option>`).join('');
 
     renderEventsList();
+    // Les cases "Soirées" des formules dépendent de allEvents : on re-render
+    // si les formules sont déjà chargées (chargement parallèle au boot).
+    if (typeof formulas !== 'undefined' && formulas.length) renderFormulas();
   } catch(err) {
     document.getElementById('eventsAdmin').innerHTML = `<div class="label">${err.message}</div>`;
   }
@@ -584,6 +587,19 @@ async function loadFormulas() {
   }
 }
 
+function eventCheckboxes(f) {
+  if (!allEvents.length) {
+    return '<span style="color:var(--muted);font-size:12px;">Aucune soirée. Crée une soirée d\'abord.</span>';
+  }
+  const assigned = new Set(f.event_ids || []);
+  return allEvents.map(ev => `
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text);white-space:nowrap;">
+      <input type="checkbox" value="${ev.id}" ${assigned.has(ev.id) ? 'checked' : ''}
+        style="width:14px;height:14px;accent-color:var(--accent);flex-shrink:0;">
+      <span>${esc(ev.title)}${ev.is_past ? ' <span style="color:var(--muted);">(passée)</span>' : ''}</span>
+    </label>`).join('');
+}
+
 function renderFormulas() {
   const container = document.getElementById('formulasAdmin');
   document.getElementById('newFormulaWrap').innerHTML = '';
@@ -633,6 +649,12 @@ function renderFormulas() {
               <span style="color:var(--pink);font-size:12px;">Formule filles uniquement</span>
             </label>
           </div>
+          <div class="field f-desc-field">
+            <label>Soirées <span style="color:var(--muted);font-size:11px;">(aucune cochée = visible sur toutes)</span></label>
+            <div id="f-events-${f.id}" style="display:flex;flex-wrap:wrap;gap:8px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:10px;max-height:150px;overflow-y:auto;">
+              ${eventCheckboxes(f)}
+            </div>
+          </div>
           <div class="field f-desc-field"><label>Description</label><textarea id="f-desc-${f.id}" style="min-height:70px;">${esc(f.description||'')}</textarea></div>
         </div>
         <div class="f-actions">
@@ -675,8 +697,15 @@ async function saveFormula(id, btn) {
       max_reservations: +document.getElementById(`f-maxresa-${id}`).value,
       is_girls_only:    document.getElementById(`f-girls-${id}`)?.checked ? 1 : 0,
     }});
+    // Attribution aux soirées (liste vide = visible sur toutes)
+    const evIds = Array.from(
+      document.querySelectorAll(`#f-events-${id} input[type=checkbox]:checked`)
+    ).map(cb => +cb.value);
+    const withEvents = await apiFetch(`/formulas/${id}/events`, {
+      method: 'PUT', body: { event_ids: evIds },
+    });
     const idx = formulas.findIndex(f => f.id === id);
-    if (idx !== -1) formulas[idx] = updated;
+    if (idx !== -1) formulas[idx] = withEvents || updated;
     renderFormulas();
   } catch(err) { showAlert(alertBox, err.message); btn.disabled=false; btn.textContent='Enregistrer'; }
 }
