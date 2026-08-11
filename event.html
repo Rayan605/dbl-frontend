@@ -25,7 +25,7 @@ let selectedFormuleFree = false;
 async function load() {
   const pc = document.getElementById('pageContent');
   try {
-    const [ev, formulas, avail] = await Promise.all([apiFetch(`/events/${eventId}`), apiFetch('/formulas'), apiFetch(`/events/${eventId}/formula-availability`)]);
+    const [ev, formulas, avail] = await Promise.all([apiFetch(`/events/${eventId}`), apiFetch(`/formulas?event_id=${eventId}`), apiFetch(`/events/${eventId}/formula-availability`)]);
     render(ev, formulas, avail);
   } catch(err) { pc.innerHTML = `<div class="empty-state">Erreur : ${err.message}</div>`; }
 }
