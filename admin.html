@@ -135,18 +135,22 @@
       user-select: none;
     }
     .ev-pick:hover { border-color: var(--accent2, var(--accent)); }
-    .ev-check {
-      -webkit-appearance: none; appearance: none;
-      width: 16px; height: 16px; flex-shrink: 0; margin: 0;
-      border: 1.5px solid var(--muted); border-radius: 3px;
-      background: transparent; cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center;
-      position: relative;
+    /* !important : le CSS global impose width:100% aux inputs */
+    .ev-pick > input.ev-check {
+      -webkit-appearance: none !important; appearance: none !important;
+      width: 16px !important; min-width: 16px !important; max-width: 16px !important;
+      height: 16px !important; min-height: 16px !important;
+      flex: 0 0 16px !important; flex-shrink: 0 !important;
+      margin: 0 !important; padding: 0 !important;
+      border: 1.5px solid var(--muted) !important; border-radius: 3px !important;
+      background: transparent !important; cursor: pointer;
+      display: inline-flex !important; align-items: center; justify-content: center;
+      position: relative; box-sizing: border-box !important;
     }
-    .ev-check:checked {
-      background: var(--accent); border-color: var(--accent);
+    .ev-pick > input.ev-check:checked {
+      background: var(--accent) !important; border-color: var(--accent) !important;
     }
-    .ev-check:checked::after {
+    .ev-pick > input.ev-check:checked::after {
       content: "✓"; color: #000; font-size: 12px;
       font-weight: 900; line-height: 1;
     }
@@ -625,7 +629,13 @@ function eventCheckboxes(f) {
     return '<span style="color:var(--muted);font-size:12px;">Aucune soirée. Crée une soirée d\'abord.</span>';
   }
   const assigned = new Set(f.event_ids || []);
-  return allEvents.map(ev => `
+  // On masque les soirées passées, SAUF si la formule y est déjà attribuée
+  // (pour pouvoir la décocher sans perdre l'info).
+  const visible = allEvents.filter(ev => !ev.is_past || assigned.has(ev.id));
+  if (!visible.length) {
+    return '<span style="color:var(--muted);font-size:12px;">Aucune soirée à venir.</span>';
+  }
+  return visible.map(ev => `
     <label class="ev-pick">
       <input type="checkbox" class="ev-check" value="${ev.id}" ${assigned.has(ev.id) ? 'checked' : ''}>
       <span>${esc(ev.title)}${ev.is_past ? ' <span style="color:var(--muted);">(passée)</span>' : ''}</span>
