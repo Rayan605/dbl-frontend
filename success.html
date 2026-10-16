@@ -15,6 +15,32 @@ renderFooter();
   renderNav('me');
 const sessionId = new URLSearchParams(location.search).get('session_id');
 
+function revealAddress(container, address) {
+  const section = document.createElement('section');
+  section.style.cssText = 'padding:20px;margin:0 0 22px;border:1px solid var(--gold);border-radius:12px;';
+  section.innerHTML = '<div class="mono text-gold" style="margin-bottom:10px">📍 ADRESSE DE LA SOIRÉE</div>';
+  if (address && address.trim()) {
+    const text = document.createElement('div');
+    text.style.cssText = 'font-size:1.15rem;color:var(--white);font-weight:600;overflow-wrap:anywhere;';
+    text.textContent = address;
+    section.appendChild(text);
+    const link = document.createElement('a');
+    link.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Voir l’itinéraire ↗';
+    link.className = 'mono text-gold';
+    link.style.cssText = 'display:inline-block;margin-top:12px;';
+    section.appendChild(link);
+  } else {
+    const msg = document.createElement('p');
+    msg.className = 'text-smoke';
+    msg.textContent = 'L’adresse exacte n’a pas encore été renseignée par l’organisateur.';
+    section.appendChild(msg);
+  }
+  container.appendChild(section);
+}
+
 async function confirm() {
   const pc = document.getElementById('pageContent');
   pc.className = '';
@@ -30,10 +56,15 @@ async function confirm() {
     const paid = res.status === 'paid';
 
     pc.innerHTML = `
-      <div class="mono text-lime mb-2">✓ Paiement validé</div>
+      <div class="mono text-lime mb-2">${paid ? '✓ Paiement validé' : '⏳ Paiement en traitement'}</div>
       <h1 style="font-family:'Playfair Display',serif;font-size:2.6rem;color:var(--white);margin-bottom:10px;line-height:1;">T'es <span style="color:var(--gold);font-style:italic;">dans le bon</span>.</h1>
       <p class="text-smoke" style="margin-bottom:28px;">${paid ? 'Ta place est réservée. On se voit là-bas.' : 'Paiement en cours de traitement.'}</p>
     `;
+
+    if (paid) {
+      // Donnée privée reçue uniquement depuis la confirmation de SA réservation.
+      revealAddress(pc, res.event_address);
+    }
 
     if (paid && res.qr_token) {
       try {

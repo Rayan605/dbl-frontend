@@ -16,7 +16,7 @@
 
   <!-- Modal QR -->
   <div id="qrModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;">
-    <div style="max-width:420px;width:100%;position:relative;">
+    <div style="max-width:420px;width:100%;max-height:90vh;overflow-y:auto;position:relative;">
       <button id="closeQr" style="position:absolute;top:-40px;right:0;background:none;border:none;color:var(--bone);font-size:1.5rem;cursor:pointer;">✕</button>
       <div id="qrContent"></div>
     </div>
@@ -30,6 +30,41 @@
 renderFooter();
   renderNav('me');
 if (!requireAuth()) {}
+
+function escapeAddress(value) {
+  const safe = value && value.trim() ? value : 'Adresse à venir';
+  return safe.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function appendPrivateAddress(parent, address) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-top:14px;padding:16px;border:1px solid var(--gold);border-radius:10px;';
+  const label = document.createElement('div');
+  label.className = 'mono text-gold';
+  label.style.cssText = 'margin-bottom:8px;font-size:.75rem;';
+  label.textContent = '📍 ADRESSE DE LA SOIRÉE';
+  wrap.appendChild(label);
+  if (address && address.trim()) {
+    const info = document.createElement('div');
+    info.style.cssText = 'color:var(--white);overflow-wrap:anywhere;';
+    info.textContent = address;
+    wrap.appendChild(info);
+    const map = document.createElement('a');
+    map.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
+    map.target = '_blank';
+    map.rel = 'noopener noreferrer';
+    map.className = 'mono text-gold';
+    map.style.cssText = 'display:inline-block;margin-top:8px;';
+    map.textContent = 'Itinéraire ↗';
+    wrap.appendChild(map);
+  } else {
+    const fallback = document.createElement('div');
+    fallback.className = 'text-smoke';
+    fallback.textContent = 'Adresse non encore renseignée par l’organisateur.';
+    wrap.appendChild(fallback);
+  }
+  parent.appendChild(wrap);
+}
 
 const qrModal = document.getElementById('qrModal');
 document.getElementById('closeQr').addEventListener('click', () => { qrModal.style.display = 'none'; });
@@ -47,6 +82,8 @@ async function openQr(reservationId, isGuest = false, guestId = null) {
       data = await apiFetch(`/reservations/${reservationId}/qr`);
     }
     renderQrTicket(content, data, isGuest);
+    // Le ticket est généré par js/api.js ; l'adresse est ajoutée dessous.
+    appendPrivateAddress(content, data.event_address);
   } catch(err) {
     content.innerHTML = `<div class="alert">${err.message}</div>`;
   }
@@ -83,6 +120,7 @@ async function load() {
             <div class="resa-event-name">${r.event_title}</div>
             <div class="resa-formula">✦ ${r.formula_name} · ${r.quantity} place${r.quantity>1?'s':''}</div>
           </div>
+          ${r.status === 'paid' ? `<div class="mono text-gold" style="width:100%;font-size:.8rem;margin-top:5px;">📍 ${escapeAddress(r.event_address)}</div>` : ''}
           <div class="resa-right">
             <div class="resa-status ${r.status}">${statusLabel}</div>
             ${r.amount_paid_cents ? `<div class="resa-price">${formatPrice(r.amount_paid_cents)}</div>` : ''}
@@ -119,6 +157,7 @@ async function load() {
             <div class="resa-event-name">${g.event_title}</div>
             <div class="resa-formula" style="color:var(--lime);">Invité(e) par ${g.host_first_name} ${g.host_last_name}</div>
           </div>
+          <div class="mono text-gold" style="width:100%;font-size:.8rem;margin-top:5px;">📍 ${escapeAddress(g.event_address)}</div>
           <div class="resa-right">
             <div class="resa-status paid">INVITÉ(E)</div>
           </div>

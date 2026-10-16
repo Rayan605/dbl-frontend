@@ -50,13 +50,13 @@ function render(ev, formulas, avail) {
         }
       </div>
       <div class="fade-up d1">
-        <div class="mono text-gold mb-2">${ev.department} · ${ev.city}</div>
+        <div class="mono text-gold mb-2">${ev.department} · Adresse révélée à l'achat</div>
         <h1 class="event-info-title">${ev.title}</h1>
         ${ev.description ? `<p class="event-desc-text">${ev.description}</p>` : ''}
         <div class="meta-strip">
           <div class="meta-item"><div class="mono">Date</div><div class="meta-val">${formatDate(ev.date)}</div></div>
           <div class="meta-item"><div class="mono">Heure</div><div class="meta-val">${formatTime(ev.date)}</div></div>
-          <div class="meta-item"><div class="mono">Lieu</div><div class="meta-val">${ev.city}</div></div>
+          <div class="meta-item"><div class="mono">Lieu</div><div class="meta-val">Adresse révélée à l'achat</div></div>
         </div>
       </div>
     </section>
